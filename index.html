@@ -1,29 +1,32 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Panel de control Masajes</title>
+<title>Agenda Catarsis</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#e9edef;--card:#fff;--ink:#1a2430;--teal:#0f5f7a;--tint:#d4e5ee;--mut:#5d6b75;--line:#cfd8dd;--red:#b8392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11181e;--card:#1b252d;--ink:#eef2f4;--teal:#5db4d3;--tint:#1d3a47;--mut:#9aa9b3;--line:#33424d}}
+:root{--bg:#e9edef;--card:#fff;--ink:#1a2430;--teal:#0f5f7a;--tint:#d4e5ee;--mut:#5d6b75;--line:#cfd8dd;--red:#b8392b;--amb:#a86a00;--grn:#2c7a4b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11181e;--card:#1b252d;--ink:#eef2f4;--teal:#5db4d3;--tint:#1d3a47;--mut:#9aa9b3;--line:#33424d;--amb:#e0a84a;--grn:#5cc08a}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Barlow,system-ui,sans-serif;padding:20px 16px 40px;max-width:1100px;margin:auto}
 h1,h2,.cond{font-family:'Barlow Condensed',sans-serif;font-weight:700;margin:0}
 h1{font-size:clamp(34px,8vw,52px);line-height:1}
 h2{font-size:clamp(28px,6vw,38px)}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.sub{color:var(--teal);font-size:28px;margin:10px 0 2px}
+.sub{color:var(--teal);font-size:28px;margin:10px 0 2px;font-weight:600}
 .mut{color:var(--mut)}
 .lbl{color:var(--mut);margin:22px 0 8px;font-size:17px}
 button,input,select{font:inherit;color:var(--ink)}
 .pill{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:10px 18px;cursor:pointer}
 .box{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:10px}
+.who{background:#1a2430;color:#fff;border-radius:22px;padding:16px 20px;margin-top:22px}
+.who b{font:700 30px/1.1 'Barlow Condensed';display:block}
+.who span{opacity:.8}
 .branch{width:100%;border:0;border-radius:20px;background:#1a2430;color:#fff;font:700 30px 'Barlow Condensed';padding:14px;margin:2px 0;cursor:pointer;opacity:.45}
 .branch.on{opacity:1}
 .ther{border:2px solid var(--line);background:var(--card);border-radius:22px;padding:16px 24px;text-align:center;cursor:pointer;margin:0 8px 8px 0;display:inline-block}
 .ther.on{background:var(--tint);border-color:var(--teal)}
 .ther b{display:block;font:700 28px/1.1 'Barlow Condensed'}
-.days{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px}
+.days{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:18px}
 .day{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:10px 2px;text-align:center;cursor:pointer;font-size:13px;position:relative}
 .day b{display:block;font:700 34px/1.1 'Barlow Condensed'}
 .day.on{background:var(--teal);color:#fff;border-color:var(--teal)}
@@ -31,74 +34,79 @@ button,input,select{font:inherit;color:var(--ink)}
 .row{display:flex;gap:8px;margin:8px 0}
 .row>*{flex:1;min-width:0}
 input,select{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;width:100%}
+.f{display:block;font-size:13px;color:var(--mut);margin:0 0 3px 4px}
 .btn{background:#1a2430;color:#fff;border:0;border-radius:16px;padding:14px;cursor:pointer;font-weight:500}
 .btn.fit{flex:0 0 auto}
 .x{flex:0 0 52px;border:1px solid var(--line);background:var(--card);border-radius:16px;color:var(--red);font-size:22px;cursor:pointer}
+.srow{display:grid;grid-template-columns:1fr 1fr 52px;gap:8px;margin:8px 0}
+.srow input:first-child{grid-column:1/-1}
 .add{border:2px dashed var(--line);border-radius:28px;padding:12px;margin-top:16px}
-.appt{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 14px;margin:8px 0}
-.appt .t{font:700 26px 'Barlow Condensed';min-width:72px}
-.appt .i{flex:1}
+.appt{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--amb);border-radius:20px;padding:12px 14px;margin:8px 0}
+.appt.s-confirmada{border-left-color:var(--grn)}
+.appt.s-disponible{border-left-color:var(--teal);border-style:dashed;border-left-style:solid}
+.appt .t{font:700 26px 'Barlow Condensed';min-width:64px}
+.appt .i{flex:1;min-width:0}
+.appt a{color:var(--teal)}
+.ctl{flex-basis:100%;display:flex;gap:8px}
+.ctl select{padding:9px 12px;border-radius:14px;font-size:15px}
+.pg-pagado{color:var(--grn);font-weight:500}.pg-pendiente{color:var(--amb);font-weight:500}
 .hide{display:none}
-.app{display:block}
-.side,.main{min-width:0}
-@media(max-width:380px){.days{grid-template-columns:repeat(3,1fr)}.branch{font-size:24px}.ther{padding:12px 16px}}
+.app{display:block}.side,.main{min-width:0}
+@media(max-width:380px){.days{grid-template-columns:repeat(3,1fr)}.branch{font-size:24px}}
 @media(min-width:600px){body{padding:28px 28px 48px}.row{gap:12px}}
-@media(min-width:860px){
- .app{display:grid;grid-template-columns:380px 1fr;gap:40px;align-items:start;margin-top:8px}
- .side{position:sticky;top:20px}
- .days{grid-template-columns:repeat(3,1fr)}
- .main h2{margin-top:22px!important}
- .appt{padding:14px 18px}
-}
+@media(min-width:860px){.app{display:grid;grid-template-columns:380px 1fr;gap:40px;align-items:start;margin-top:8px}.side{position:sticky;top:20px}.days{grid-template-columns:repeat(3,1fr)}.main h2{margin-top:22px!important}}
 @media(min-width:1200px){body{max-width:1240px}.app{grid-template-columns:420px 1fr}}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 </style></head><body>
-<div class="top"><h1>Panel de control Masajes</h1><button class="pill" id="edBtn">Editar</button></div>
-<div class="sub cond" style="font-weight:600">Planificación de horas</div>
+<div class="top"><h1>Agenda Catarsis</h1><button class="pill" id="edBtn">Editar</button></div>
+<div class="sub cond">Estética y Bienestar</div>
 <div class="mut" id="week"></div>
-
 <div id="edit" class="box hide" style="margin-top:18px;padding:18px"></div>
-
 <main class="app"><section class="side">
-<div class="lbl">Sucursal</div><div class="box" id="branches"></div>
-<div class="lbl">Terapeuta</div><div id="thers"></div>
+<div id="who"></div>
+<div id="selbox" class="hide"><div class="lbl">Sucursal</div><div class="box" id="branches"></div><div class="lbl">Terapeuta</div><div id="thers"></div></div>
 <div class="days" id="days"></div>
-
 </section><section class="main">
 <h2 style="margin-top:28px" id="dayTitle"></h2>
 <div class="mut" id="dayInfo"></div>
 <div id="list"></div>
-
 <div class="add">
-  <div class="row"><input type="time" id="time" value="09:00" aria-label="Hora">
-    <select id="dur" aria-label="Duración"><option>30</option><option selected>60</option><option>90</option><option>120</option></select></div>
-  <input id="client" placeholder="Nombre del cliente" style="margin:2px 0 8px">
-  <select id="svc" aria-label="Servicio"><option>Relajación</option><option>Descontracturante</option><option>Deportivo</option><option>Piedras calientes</option><option>Drenaje linfático</option></select>
-  <button class="btn" style="width:100%;margin-top:8px" id="addAppt">Agregar hora</button>
+  <label class="f" for="svc">Servicio</label><select id="svc"></select>
+  <div class="row"><div><label class="f" for="time">Hora</label><input type="time" id="time" value="09:00"></div>
+    <div><label class="f" for="dur">Duración (min)</label><input type="number" id="dur" min="5" step="5"></div>
+    <div><label class="f" for="price">Valor ($)</label><input type="number" id="price" min="0" step="500"></div></div>
+  <div class="row"><input id="client" placeholder="Nombre del cliente" aria-label="Nombre del cliente"><input id="phone" type="tel" placeholder="Teléfono (ej. 9 1234 5678)" aria-label="Teléfono"></div>
+  <label class="f" for="estado">Estado de la hora</label>
+  <select id="estado"><option value="reservada">Reservada</option><option value="confirmada">Confirmada</option><option value="disponible">Disponible</option></select>
+  <button class="btn" style="width:100%;margin-top:10px" id="addAppt">Agregar hora</button>
 </div>
-
 </section></main>
 <div class="mut" id="sync" style="margin-top:28px;font-size:14px"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-// === PEGA AQUÍ LA CONFIGURACIÓN DE FIREBASE (ver pasos) ===
+// === PEGA AQUÍ LA CONFIGURACIÓN DE FIREBASE ===
 const FIREBASE_CONFIG=null;
-/* Ejemplo:
-const FIREBASE_CONFIG={apiKey:"...",authDomain:"...",projectId:"...",storageBucket:"...",messagingSenderId:"...",appId:"..."};
-*/
-const KEY='masajes-v1';
+/* Ejemplo: const FIREBASE_CONFIG={apiKey:"...",authDomain:"...",projectId:"...",storageBucket:"...",messagingSenderId:"...",appId:"..."}; */
+const KEY='masajes-v1',ROL='Cosmetóloga y Masoterapeuta';
+const DEF=[{n:'Masaje relajación',m:60,v:25000},{n:'Masaje descontracturante',m:60,v:28000},{n:'Drenaje linfático',m:60,v:30000},{n:'Maderoterapia',m:60,v:30000},{n:'Limpieza facial',m:60,v:30000},{n:'Extracción de acrocordones',m:30,v:20000}];
 const iso=d=>d.toISOString().slice(0,10);
 const today=new Date();today.setHours(12,0,0,0);
 const mon=new Date(today);mon.setDate(today.getDate()-((today.getDay()+6)%7));
 const MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const DIA=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const DS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-let S={branches:['Mi sucursal'],thers:['Terapeuta 1'],appts:[],branch:0,ther:0};
+let S={branches:['Catarsis Osorno'],thers:['Daniela Velásquez'],services:DEF,appts:[],branch:0,ther:0};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-let sel=iso(today),editing=false,custom=false;
-let ref=null,skip=false;
-const push=()=>ref.set({branches:S.branches,thers:S.thers,appts:S.appts}).catch(()=>{sync.textContent='No se pudo guardar en la nube'});
+function migrate(){
+  S.branches=S.branches.map(b=>b==='Mi sucursal'?'Catarsis Osorno':b);
+  S.thers=S.thers.map(t=>t==='Terapeuta 1'?'Daniela Velásquez':t);
+  if(!S.services||!S.services.length)S.services=DEF;
+  S.appts.forEach(a=>{a.k=a.k.replace('Mi sucursal','Catarsis Osorno').replace('Terapeuta 1','Daniela Velásquez');a.e=a.e||'reservada';a.p=a.p||'pendiente';a.v=a.v||0;a.f=a.f||''});
+}
+migrate();
+let sel=iso(today),editing=false,custom=false,ref=null,skip=false;
+const push=()=>ref.set({branches:S.branches,thers:S.thers,services:S.services,appts:S.appts}).catch(()=>{sync.textContent='No se pudo guardar en la nube'});
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} if(ref&&!skip)push()};
 function initDB(){
   if(!FIREBASE_CONFIG||!window.firebase){sync.textContent='Guardado solo en este dispositivo';return}
@@ -106,19 +114,21 @@ function initDB(){
   ref=firebase.firestore().collection('masajes').doc('datos');
   ref.onSnapshot(s=>{
     if(s.metadata.hasPendingWrites)return;
-    if(s.exists){
-      const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.appts=d.appts||[];
-      S.branch=Math.min(S.branch,S.branches.length-1);S.ther=Math.min(S.ther,S.thers.length-1);
-      skip=true;render();skip=false;
-    }else push();
+    if(s.exists){const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.services=d.services||S.services;S.appts=d.appts||[];
+      migrate();S.branch=Math.min(S.branch,S.branches.length-1);S.ther=Math.min(S.ther,S.thers.length-1);skip=true;render();skip=false;}
+    else push();
     sync.textContent='Sincronizado en la nube ✓';
   },()=>{sync.textContent='Sin conexión con la base de datos'});
 }
-const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const key=()=>S.branches[S.branch]+'|'+S.thers[S.ther];
 const mine=()=>S.appts.filter(a=>a.k===key());
 const fmtD=s=>{const d=new Date(s+'T12:00');return `${DIA[d.getDay()]} ${d.getDate()} de ${MES[d.getMonth()]}`};
+const money=n=>'$'+Number(n||0).toLocaleString('es-CL');
 const end=(t,m)=>{const [h,n]=t.split(':').map(Number);const x=h*60+n+m;return String(Math.floor(x/60)%24).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
+const wa=p=>{let d=p.replace(/\D/g,'');if(d.length===9)d='56'+d;return 'https://wa.me/'+d};
+const opt=(arr,v)=>arr.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('');
+const fill=()=>{const s=S.services[svc.value]||S.services[0];dur.value=s.m;price.value=s.v};
 
 function render(){
   const fri=new Date(mon);fri.setDate(mon.getDate()+4);
@@ -126,22 +136,32 @@ function render(){
   edBtn.textContent=editing?'Cerrar':'Editar';
   edit.classList.toggle('hide',!editing);
   if(editing){
-    edit.innerHTML=S.branches.map((b,i)=>`<div class="row"><input data-b="${i}" value="${esc(b)}"><button class="x" data-xb="${i}" aria-label="Quitar sucursal">✕</button></div>`).join('')
+    edit.innerHTML=`<div class="lbl" style="margin-top:0">Sucursales y terapeutas</div>`
+    +S.branches.map((b,i)=>`<div class="row"><input data-b="${i}" value="${esc(b)}"><button class="x" data-xb="${i}" aria-label="Quitar sucursal">✕</button></div>`).join('')
     +S.thers.map((b,i)=>`<div class="row"><input data-t="${i}" value="${esc(b)}"><button class="x" data-xt="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')
-    +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><hr style="border:0;border-top:1px solid var(--line)"><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`;
+    +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
+    +`<div class="lbl">Servicios: nombre, minutos y valor</div>`
+    +S.services.map((s,i)=>`<div class="srow"><input data-sv="${i}" data-f="n" value="${esc(s.n)}" aria-label="Servicio"><input type="number" data-sv="${i}" data-f="m" value="${s.m}" aria-label="Minutos"><input type="number" data-sv="${i}" data-f="v" value="${s.v}" aria-label="Valor"><button class="x" data-xs="${i}" aria-label="Quitar servicio">✕</button></div>`).join('')
+    +`<button class="btn" style="width:100%" id="as">Agregar servicio</button>`;
   }
+  const single=S.branches.length===1&&S.thers.length===1;
+  who.innerHTML=single?`<div class="who"><b>${esc(S.branches[0])}</b><span>${esc(S.thers[0])} · ${ROL}</span></div>`:'';
+  selbox.classList.toggle('hide',single);
   branches.innerHTML=S.branches.map((b,i)=>`<button class="branch ${i==S.branch?'on':''}" data-sb="${i}">${esc(b)}</button>`).join('');
-  thers.innerHTML=S.thers.map((t,i)=>`<div class="ther ${i==S.ther?'on':''}" data-st="${i}"><b>${esc(t)}</b><span class="mut">Masoterapeuta</span></div>`).join('');
-  const list0=mine();
-  let h='';
-  for(let i=0;i<5;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const s=iso(d);const n=list0.filter(a=>a.d===s).length;
+  thers.innerHTML=S.thers.map((t,i)=>`<div class="ther ${i==S.ther?'on':''}" data-st="${i}"><b>${esc(t)}</b><span class="mut">${ROL}</span></div>`).join('');
+  const cur=svc.value||0,first=!svc.options.length;
+  svc.innerHTML=S.services.map((s,i)=>`<option value="${i}">${esc(s.n)} · ${s.m} min · ${money(s.v)}</option>`).join('');
+  svc.value=S.services[cur]?cur:0;if(first)fill();
+  const L0=mine();let h='';
+  for(let i=0;i<5;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const s=iso(d);const n=L0.filter(a=>a.d===s).length;
     h+=`<div class="day ${s===sel&&!custom?'on':''}" data-d="${s}">${s===iso(today)?'Hoy':DS[d.getDay()]}<b>${d.getDate()}</b>${n} hora${n==1?'':'s'}</div>`}
   h+=`<div class="day ${custom?'on':''}">Otra<b>📅</b>${custom?sel.slice(5).split('-').reverse().join('/'):'fecha'}<input type="date" id="pick" aria-label="Otra fecha"></div>`;
   days.innerHTML=h;
   dayTitle.innerHTML=sel===iso(today)?`<span style="color:var(--teal)">Hoy</span>, ${fmtD(sel)}`:fmtD(sel);
-  const L=list0.filter(a=>a.d===sel).sort((a,b)=>a.t.localeCompare(b.t));
-  dayInfo.textContent=L.length?`${L.length} hora${L.length==1?'':'s'} agendada${L.length==1?'':'s'}.`:'Sin horas agendadas.';
-  list.innerHTML=L.map(a=>`<div class="appt"><div class="t">${a.t}</div><div class="i"><b>${esc(a.c||'Sin nombre')}</b><div class="mut">${esc(a.s)} · hasta ${end(a.t,a.m)}</div></div><button class="x" style="flex-basis:44px;height:44px" data-xa="${a.id}" aria-label="Quitar hora">✕</button></div>`).join('');
+  const L=L0.filter(a=>a.d===sel).sort((a,b)=>a.t.localeCompare(b.t));
+  const pend=L.filter(a=>a.e!=='disponible'&&a.p==='pendiente').length;
+  dayInfo.textContent=L.length?`${L.length} hora${L.length==1?'':'s'} agendada${L.length==1?'':'s'}`+(pend?` · ${pend} abono${pend==1?'':'s'} pendiente${pend==1?'':'s'}`:''):'Sin horas agendadas.';
+  list.innerHTML=L.map(a=>{const free=a.e==='disponible';return `<div class="appt s-${a.e}"><div class="t">${a.t}</div><div class="i"><b>${free?'Horario disponible':esc(a.c||'Sin nombre')}</b>${a.f&&!free?` · <a href="${wa(a.f)}" target="_blank" rel="noopener">${esc(a.f)}</a>`:''}<div class="mut">${esc(a.s)} · hasta ${end(a.t,a.m)} · ${money(a.v)}</div></div><button class="x" style="flex-basis:44px;height:44px" data-xa="${a.id}" aria-label="Quitar hora">✕</button><div class="ctl"><select data-e="${a.id}" aria-label="Estado">${opt([['disponible','Disponible'],['reservada','Reservada'],['confirmada','Confirmada']],a.e)}</select>${free?'':`<select class="pg-${a.p}" data-p="${a.id}" aria-label="Abono">${opt([['pendiente','Abono pendiente'],['pagado','Abono pagado']],a.p)}</select>`}</div></div>`}).join('');
   save();
 }
 document.addEventListener('click',e=>{
@@ -153,18 +173,28 @@ document.addEventListener('click',e=>{
   else if(el=g('data-xa'))S.appts=S.appts.filter(a=>a.id!=el.dataset.xa);
   else if(el=g('data-xb')){if(S.branches.length>1){S.branches.splice(+el.dataset.xb,1);S.branch=0}}
   else if(el=g('data-xt')){if(S.thers.length>1){S.thers.splice(+el.dataset.xt,1);S.ther=0}}
+  else if(el=g('data-xs')){if(S.services.length>1){S.services.splice(+el.dataset.xs,1);svc.innerHTML=''}}
   else if(e.target.id==='at'){const v=nt.value.trim();if(v)S.thers.push(v)}
   else if(e.target.id==='ab'){const v=nb.value.trim();if(v)S.branches.push(v)}
+  else if(e.target.id==='as'){S.services.push({n:'Nuevo servicio',m:60,v:0})}
   else if(e.target.id==='addAppt'){
-    if(!time.value)return;
-    S.appts.push({id:Date.now(),k:key(),d:sel,t:time.value,m:+dur.value,c:client.value.trim(),s:svc.value});client.value=''}
+    if(!time.value)return;const s=S.services[svc.value]||S.services[0];
+    S.appts.push({id:Date.now(),k:key(),d:sel,t:time.value,m:+dur.value||s.m,c:client.value.trim(),f:phone.value.trim(),s:s.n,v:+price.value||0,e:estado.value,p:'pendiente'});
+    client.value='';phone.value=''}
   else return;
   render();
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='pick'&&e.target.value){sel=e.target.value;custom=true;render()}
-  if(e.target.dataset.b!==undefined){S.branches[+e.target.dataset.b]=e.target.value;render()}
-  if(e.target.dataset.t!==undefined){S.thers[+e.target.dataset.t]=e.target.value;render()}
+  const t=e.target,d=t.dataset;
+  if(t.id==='pick'&&t.value){sel=t.value;custom=true}
+  else if(t.id==='svc'){fill();return}
+  else if(d.b!==undefined){const o=S.branches[+d.b];S.branches[+d.b]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(b===o)a.k=t.value+'|'+r})}
+  else if(d.t!==undefined){const o=S.thers[+d.t];S.thers[+d.t]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(r===o)a.k=b+'|'+t.value})}
+  else if(d.sv!==undefined){S.services[+d.sv][d.f]=d.f==='n'?t.value:(+t.value||0);svc.innerHTML=''}
+  else if(d.e!==undefined){S.appts.find(a=>a.id==d.e).e=t.value}
+  else if(d.p!==undefined){S.appts.find(a=>a.id==d.p).p=t.value}
+  else return;
+  render();
 });
 render();
 initDB();
