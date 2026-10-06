@@ -87,7 +87,8 @@ body.locked #login{display:block}
 <div class="mut" id="dayInfo"></div>
 <div id="list"></div>
 <div class="add">
-  <label class="f" for="svc">Servicio</label><select id="svc"></select>
+  <label class="f" for="cat">Categoría</label><select id="cat"></select>
+  <label class="f" for="svc" style="margin-top:8px">Servicio</label><select id="svc"></select>
   <div class="row"><div><label class="f" for="time">Hora</label><input type="time" id="time" value="09:00"></div>
     <div><label class="f" for="dur">Duración (min)</label><input type="number" id="dur" min="5" step="5"></div>
     <div><label class="f" for="price">Valor ($)</label><input type="number" id="price" min="0" step="500"></div></div>
@@ -114,7 +115,7 @@ const FIREBASE_CONFIG={
 };
 /* Ejemplo: const FIREBASE_CONFIG={apiKey:"...",authDomain:"...",projectId:"...",storageBucket:"...",messagingSenderId:"...",appId:"..."}; */
 const KEY='masajes-v1',ROL='Cosmetóloga y Masoterapeuta';
-const DEF=[{n:'Masaje relajación',m:60,v:25000},{n:'Masaje descontracturante',m:60,v:28000},{n:'Drenaje linfático',m:60,v:30000},{n:'Maderoterapia',m:60,v:30000},{n:'Limpieza facial',m:60,v:30000},{n:'Extracción de acrocordones',m:30,v:20000}];
+const DEF=[{"n":"Masaje Relajante Cuerpo Completo","m":50,"v":26000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje Mixto Cuerpo Completo (relajación + descontracturante)","m":50,"v":28000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje Descontracturante Cuerpo Completo","m":50,"v":30000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Descontracturante + Ventosas Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje con Piedras Calientes Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje con Cannabis Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje para Embarazadas Cuerpo Completo","m":50,"v":30000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje para Fibromialgia Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje Relajante de Espalda","m":30,"v":20000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Descontracturante de Espalda","m":30,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Cérvico-Craneal","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Cráneo-Facial","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Facial para Bruxismo","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje para Piernas Cansadas","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Podal","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Abdominal / Colon","m":40,"v":27000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Drenaje Linfático Manual Cuerpo Completo","m":60,"v":40000,"c":"Masoterapia","g":"Drenaje linfático"},{"n":"Drenaje Linfático de Piernas","m":40,"v":30000,"c":"Masoterapia","g":"Drenaje linfático"},{"n":"Drenaje Linfático Rostro","m":40,"v":25000,"c":"Masoterapia","g":"Drenaje linfático"},{"n":"Limpieza Facial Profunda Purificante","m":60,"v":30000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Men – Limpieza Profunda Masculina","m":60,"v":30000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Piel Joven – Control de Impurezas","m":60,"v":30000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Limpieza Profunda + Fototerapia LED","m":60,"v":38000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Premium Reafirmante & Anti-Age","m":60,"v":45000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Glow + Dermaplaning","m":60,"v":50000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Limpieza Profunda de Espalda","m":60,"v":38000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Dermaplaning Glow Express","m":30,"v":25000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Extracción de Milium (1)","m":15,"v":5000,"c":"Limpiezas faciales","g":"Extracción de milium"},{"n":"Extracción de Milium (2 – 3)","m":15,"v":10000,"c":"Limpiezas faciales","g":"Extracción de milium"},{"n":"Extracción de Milium (4 – 5)","m":15,"v":15000,"c":"Limpiezas faciales","g":"Extracción de milium"}];
 const iso=d=>d.toISOString().slice(0,10);
 const today=new Date();today.setHours(12,0,0,0);
 const mon=new Date(today);mon.setDate(today.getDate()-((today.getDay()+6)%7));
@@ -126,8 +127,9 @@ try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catc
 function migrate(){
   S.branches=S.branches.map(b=>b==='Mi sucursal'?'Catarsis Osorno':b);
   S.thers=S.thers.map(t=>t==='Terapeuta 1'?'Daniela Velásquez':t);
-  if(!S.services||!S.services.length)S.services=DEF;
-  S.cfg=Object.assign({abono:30,plazo:24,datos:'',wa:''},S.cfg||{});
+  if(!S.services||!S.services.length||S.services.some(x=>!x.c))S.services=DEF.map(x=>({...x}));
+  S.cfg=Object.assign({abono:10000,plazo:24,datos:'',wa:''},S.cfg||{});
+  if(S.cfg.abono>0&&S.cfg.abono<=100)S.cfg.abono=10000;
   S.cfg.horario=Object.assign({dias:[1,2,3,4,5],desde:'10:00',hasta:'19:00',paso:30,adv:2},S.cfg.horario||{});
   S.appts.forEach(a=>{a.k=a.k.replace('Mi sucursal','Catarsis Osorno').replace('Terapeuta 1','Daniela Velásquez');a.e=a.e||'reservada';a.p=a.p||'pendiente';a.v=a.v||0;a.f=a.f||''});
 }
@@ -158,7 +160,7 @@ function processReservas(){
 function syncPublic(){
   const db=firebase.firestore(),t0=iso(today),oc={};
   S.appts.forEach(a=>{if(a.d<t0||a.e==='disponible')return;const x=toMin(a.t);(oc[a.d]=oc[a.d]||[]).push(x+'-'+(x+(+a.m||0)))});
-  const doc={abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa,horario:S.cfg.horario,services:S.services.map(x=>({n:x.n,m:+x.m,v:+x.v})),ocupado:oc};
+  const doc={abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa,horario:S.cfg.horario,services:S.services.map(x=>({n:x.n,m:+x.m,v:+x.v,c:x.c||'Otros',g:x.g||''})),ocupado:oc};
   const j=JSON.stringify(doc);
   if(j!==lastCfg){lastCfg=j;pubP=db.collection('publico').doc('agenda').set(doc).then(()=>{pubInfo.textContent='Horario publicado para tus clientas ✓'}).catch(pubErr)}
 }
@@ -212,10 +214,10 @@ function render(){
     +S.thers.map((b,i)=>`<div class="row"><input data-t="${i}" value="${esc(b)}"><button class="x" data-xt="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')
     +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
     +`<div class="lbl">Servicios: nombre, minutos y valor</div>`
-    +S.services.map((s,i)=>`<div class="srow"><input data-sv="${i}" data-f="n" value="${esc(s.n)}" aria-label="Servicio"><input type="number" data-sv="${i}" data-f="m" value="${s.m}" aria-label="Minutos"><input type="number" data-sv="${i}" data-f="v" value="${s.v}" aria-label="Valor"><button class="x" data-xs="${i}" aria-label="Quitar servicio">✕</button></div>`).join('')
+    +S.services.map((s,i)=>`<div class="srow"><input data-sv="${i}" data-f="n" value="${esc(s.n)}" aria-label="Servicio"><select data-sv="${i}" data-f="c" aria-label="Categoría">${['Masoterapia','Limpiezas faciales'].map(c=>`<option ${c===s.c?'selected':''}>${c}</option>`).join('')}</select><input data-sv="${i}" data-f="g" value="${esc(s.g||'')}" placeholder="Grupo" style="grid-column:2/4" aria-label="Grupo"><input type="number" data-sv="${i}" data-f="m" value="${s.m}" aria-label="Minutos"><input type="number" data-sv="${i}" data-f="v" value="${s.v}" aria-label="Valor"><button class="x" data-xs="${i}" aria-label="Quitar servicio">✕</button></div>`).join('')
     +`<button class="btn" style="width:100%" id="as">Agregar servicio</button>`
     +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('reservas.html',location.href).href)}</b></div>
-    <div class="row"><div><label class="f">Abono (%)</label><input type="number" data-c="abono" min="0" max="100" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (horas)</label><input type="number" data-c="plazo" min="1" value="${S.cfg.plazo}"></div></div>
+    <div class="row"><div><label class="f">Abono ($, se descuenta del valor)</label><input type="number" data-c="abono" min="0" step="1000" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (horas)</label><input type="number" data-c="plazo" min="1" value="${S.cfg.plazo}"></div></div>
     <label class="f">Tu WhatsApp (con 56, sin +)</label><input data-c="wa" type="tel" placeholder="56912345678" value="${esc(S.cfg.wa)}">
     <label class="f" style="margin-top:8px">Datos de transferencia</label><textarea data-c="datos" rows="4" placeholder="Banco, tipo de cuenta, N°, RUT, correo">${esc(S.cfg.datos)}</textarea>`
     +`<div class="lbl">Horario de atención (lo que ven tus clientas)</div>
@@ -229,9 +231,13 @@ function render(){
   selbox.classList.toggle('hide',single);
   branches.innerHTML=S.branches.map((b,i)=>`<button class="branch ${i==S.branch?'on':''}" data-sb="${i}">${esc(b)}</button>`).join('');
   thers.innerHTML=S.thers.map((t,i)=>`<div class="ther ${i==S.ther?'on':''}" data-st="${i}"><b>${esc(t)}</b><span class="mut">${ROL}</span></div>`).join('');
-  const cur=svc.value||0,first=!svc.options.length;
-  svc.innerHTML=S.services.map((s,i)=>`<option value="${i}">${esc(s.n)} · ${s.m} min · ${money(s.v)}</option>`).join('');
-  svc.value=S.services[cur]?cur:0;if(first)fill();
+  const cats=[...new Set(S.services.map(x=>x.c||'Otros'))],cc=cats.includes(cat.value)?cat.value:cats[0];
+  cat.innerHTML=cats.map(c=>`<option ${c===cc?'selected':''}>${esc(c)}</option>`).join('');
+  const prev=svc.value,first=!svc.options.length,gr={};
+  S.services.forEach((x,i)=>{if((x.c||'Otros')!==cc)return;(gr[x.g||'']=gr[x.g||'']||[]).push(`<option value="${i}">${esc(x.n)} · ${x.m} min · ${money(x.v)}</option>`)});
+  svc.innerHTML=Object.entries(gr).map(([g,o])=>g?`<optgroup label="${esc(g)}">${o.join('')}</optgroup>`:o.join('')).join('');
+  if([...svc.options].some(o=>o.value===prev))svc.value=prev;else{svc.selectedIndex=0;fill()}
+  if(first)fill();
   const L0=mine();let h='';
   for(let i=0;i<5;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const s=iso(d);const n=L0.filter(a=>a.d===s).length;
     h+=`<div class="day ${s===sel&&!custom?'on':''}" data-d="${s}">${s===iso(today)?'Hoy':DS[d.getDay()]}<b>${d.getDate()}</b>${n} hora${n==1?'':'s'}</div>`}
@@ -256,7 +262,7 @@ document.addEventListener('click',e=>{
   else if(el=g('data-xs')){if(S.services.length>1){S.services.splice(+el.dataset.xs,1);svc.innerHTML=''}}
   else if(e.target.id==='at'){const v=nt.value.trim();if(v)S.thers.push(v)}
   else if(e.target.id==='ab'){const v=nb.value.trim();if(v)S.branches.push(v)}
-  else if(e.target.id==='as'){S.services.push({n:'Nuevo servicio',m:60,v:0})}
+  else if(e.target.id==='as'){S.services.push({n:'Nuevo servicio',m:60,v:0,c:'Masoterapia',g:'Otros'})}
   else if(e.target.id==='addAppt'){
     if(!time.value)return;const s=S.services[svc.value]||S.services[0];
     S.appts.push({id:Date.now(),k:key(),d:sel,t:time.value,m:+dur.value||s.m,c:client.value.trim(),f:phone.value.trim(),s:s.n,v:+price.value||0,e:estado.value,p:'pendiente'});
@@ -267,10 +273,11 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target,d=t.dataset;
   if(t.id==='pick'&&t.value){sel=t.value;custom=true}
+  else if(t.id==='cat'){render();fill();return}
   else if(t.id==='svc'){fill();return}
   else if(d.b!==undefined){const o=S.branches[+d.b];S.branches[+d.b]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(b===o)a.k=t.value+'|'+r})}
   else if(d.t!==undefined){const o=S.thers[+d.t];S.thers[+d.t]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(r===o)a.k=b+'|'+t.value})}
-  else if(d.sv!==undefined){S.services[+d.sv][d.f]=d.f==='n'?t.value:(+t.value||0);svc.innerHTML=''}
+  else if(d.sv!==undefined){S.services[+d.sv][d.f]=['n','c','g'].includes(d.f)?t.value:(+t.value||0);svc.innerHTML=''}
   else if(d.dia!==undefined){const v=+d.dia,a=S.cfg.horario.dias;S.cfg.horario.dias=t.checked?[...new Set([...a,v])]:a.filter(x=>x!==v)}
   else if(d.h!==undefined){S.cfg.horario[d.h]=(d.h==='paso'||d.h==='adv')?(+t.value||0):t.value}
   else if(d.c!==undefined){S.cfg[d.c]=d.c==='abono'||d.c==='plazo'?(+t.value||0):t.value}
