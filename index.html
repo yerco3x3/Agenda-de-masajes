@@ -65,6 +65,16 @@ a.cta{display:block;text-align:center;text-decoration:none}
 .note{background:var(--tint);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:14px}
 .chip{min-height:48px}.cta{min-height:48px}.nav{width:34px;height:52px}
 input,select{min-height:46px}
+.acts{display:flex;gap:10px;margin-top:18px}
+.acts .cta{width:auto;margin:0;flex:1}
+.acts .cta.alt{flex:0 0 34%}
+.hl{background:var(--tint);padding:1px 7px;border-radius:7px;font-weight:700;white-space:nowrap}
+.timer{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--tint);border:1px solid var(--line);border-left:6px solid var(--acc);border-radius:14px;padding:12px 14px;margin:14px 0}
+.timer span{font-size:14px;line-height:1.3}
+.timer b{font:700 32px/1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.timer.off{border-left-color:var(--red);display:block}
+.timer.off b{display:none}
+.timer.off span{font-size:14px;font-weight:600}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 
 select{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0 2px;font:inherit}
@@ -201,8 +211,23 @@ function view2(app){
   <label class="f" for="tel">Teléfono</label><input id="tel" type="tel" placeholder="9 1234 5678" autocomplete="tel" maxlength="20" required>
   ${MAIL_ON?`<label class="f" for="mail">Correo</label><input id="mail" type="email" inputmode="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" maxlength="80" required>`:''}
   <input id="hp" name="sitio_web" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-  <div class="err" id="err" role="alert"></div><button class="cta" id="send" type="submit">Solicitar hora</button><button class="cta alt" type="button" data-go="back">Volver</button></form></div>`;
+  <div class="err" id="err" role="alert"></div><div class="acts"><button class="cta alt" type="button" data-go="back">Volver</button><button class="cta" id="send" type="submit">Solicitar hora</button></div></form></div>`;
   t2=Date.now();$('nom').focus();
+}
+let cdT=null;
+const PMIN=()=>{const m=+(ag&&ag.plazoMin);return m>0?m:15};
+function startCd(a){
+  clearInterval(cdT);
+  const fin=(a.at||Date.now())+PMIN()*60000;
+  const tick=()=>{
+    const el=$('cd'),box=$('timer');
+    if(!el||!box){clearInterval(cdT);return}
+    const r=Math.max(0,Math.ceil((fin-Date.now())/1000));
+    if(r<=0){box.classList.add('off');box.innerHTML='<span>El plazo terminó. Si ya transferiste, envíanos el comprobante por WhatsApp para confirmar tu hora.</span>';clearInterval(cdT);return}
+    const h=Math.floor(r/3600),m=Math.floor(r%3600/60),sec=r%60;
+    el.textContent=(h?h+':':'')+String(m).padStart(h?2:2,'0')+':'+String(sec).padStart(2,'0');
+  };
+  tick();cdT=setInterval(tick,1000);
 }
 function view3(app){
   const a=booked;if(!a)return;
@@ -210,9 +235,11 @@ function view3(app){
   const msg=encodeURIComponent(`Hola, soy ${a.n}. Reservé ${a.s} el ${fmtD(a.d)} a las ${fmt(a.t)}. Te envío el comprobante del abono.`);
   app.innerHTML=`<div class="ok"><h3 style="color:var(--grn)">Solicitud enviada</h3><p><b>${esc(a.s)}</b>${a.th?' con '+esc(a.th):''}<br>${cap(fmtD(a.d))} · ${fmt(a.t)} a ${fmt(a.t+a.m)}</p>
   ${MAIL_ON&&a.mail?`<p class="mut" style="margin:0 0 8px">Te enviamos el detalle a <b>${esc(a.mail)}</b>. Si no lo ves, revisa la carpeta de spam.</p>`:''}
-  <p>Tu hora queda <b>pendiente hasta que se pague el abono</b>${ab?` de <b>${money(ab)}</b> (se descuenta del valor del servicio)`:''}. Tienes <b>${plz(ag&&ag.plazoMin)}</b> para transferirlo; pasado ese plazo la hora puede liberarse.</p>
+  <p>Tu hora queda <b>pendiente hasta que se pague el abono</b>${ab?` de <b>${money(ab)}</b> (se descuenta del valor del servicio)`:''}. Tienes <b class="hl">${plz(ag&&ag.plazoMin)}</b> para transferirlo; pasado ese plazo la hora puede liberarse.</p>
+  <div class="timer" id="timer" role="timer"><span>Tiempo para transferir el abono</span><b id="cd">--:--</b></div>
   ${DATOS()?`<pre>${esc(DATOS())}</pre>`:''}${WA()?`<a class="cta" href="https://wa.me/${WA()}?text=${msg}" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>`:''}
   <button class="cta alt" data-go="again">Reservar otra hora</button></div>`;
+  startCd(a);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.addEventListener('click',e=>{
@@ -237,7 +264,7 @@ document.addEventListener('submit',async e=>{
   if(t.replace(/\D/g,'').length<8){er.textContent='Escribe un teléfono válido.';return}
   const mail=MAIL_ON?$('mail').value.trim():'';
   if(MAIL_ON&&!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)){er.textContent='Escribe un correo válido.';return}
-  if($('hp').value||Date.now()-t2<2500){booked={d:selDay,t:selT,s:sv.n,m:+sv.m,v:+sv.v,n,th:curTh().n};step=3;selT=null;render();return}
+  if($('hp').value||Date.now()-t2<2500){booked={d:selDay,t:selT,s:sv.n,m:+sv.m,v:+sv.v,n,th:curTh().n,at:Date.now()};step=3;selT=null;render();return}
   busy=true;$('send').disabled=true;er.textContent='';
   const d=selDay,s0=selT,dur=Math.max(5,+sv.m),paso=Math.max(10,+H().paso||30),tel=(x=>x.length>9?x.slice(-9):x)(t.replace(/\D/g,''));
   try{
@@ -246,7 +273,7 @@ document.addEventListener('submit',async e=>{
     b.set(db.collection('pendientes').doc(tel),{r:rr.id});
     for(let x=s0;x<s0+dur;x+=paso)b.set(db.collection('bloques').doc(tid+'_'+d+'_'+hhmm(x)),{d,t:fmt(x),r:rr.id,tid});
     await b.commit();
-    booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n,th:curTh().n,mail};step=3;busy=false;selT=null;render();
+    booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n,th:curTh().n,mail,at:Date.now()};step=3;busy=false;selT=null;render();
     sendMails(booked,t,mail);
   }catch(x){
     busy=false;$('send').disabled=false;
