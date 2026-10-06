@@ -41,8 +41,11 @@ input,select,textarea{font:inherit;background:var(--bg);border:1px solid var(--l
 .btn{background:var(--btn);color:var(--btnink);border:0;border-radius:14px;padding:10px 14px;font-size:15px;cursor:pointer;font-weight:500}
 .btn.fit{flex:0 0 auto}
 .x{flex:0 0 42px;border:1px solid var(--line);background:var(--card);border-radius:14px;color:var(--red);font-size:17px;cursor:pointer}
-.srow{display:grid;grid-template-columns:1fr 1fr 42px;gap:8px;margin:8px 0}
-.srow input:first-child{grid-column:1/-1}
+.svcard{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:8px 0}
+.svi{flex:1;min-width:0}.svi b{display:block;font-size:15px;line-height:1.25}.svi .mut{font-size:13px}.svm{font-weight:600;font-size:14px;margin-top:2px}
+.sva{display:flex;gap:8px;align-items:center;flex:none}
+.sva .pill{font-size:13px;padding:7px 12px}.sva .x{flex:0 0 38px;height:38px}
+.modal.conf{z-index:40}
 .add{border:2px dashed var(--line);border-radius:28px;padding:12px;margin-top:16px}
 .appt{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--amb);border-radius:20px;padding:10px 12px;margin:8px 0}
 .appt.s-confirmada{border-left-color:var(--grn)}
@@ -128,6 +131,25 @@ body.locked #login{display:block}
   <button class="btn" style="width:100%;margin-top:10px" id="addAppt">Agregar hora</button>
 </div>
 </section></main>
+<div id="confModal" class="modal conf nobox" hidden role="alertdialog" aria-modal="true" aria-labelledby="confTitle" aria-describedby="confMsg">
+ <div class="mbox" style="max-width:380px;text-align:center">
+  <h3 id="confTitle" style="font:700 22px 'Barlow Condensed',sans-serif;margin:0 0 6px">¿Eliminar?</h3>
+  <p id="confMsg" class="mut" style="margin:0 0 16px"></p>
+  <div class="row"><button class="pill" type="button" data-confno id="confNo">Cancelar</button><button class="btn" type="button" data-confyes id="confYes" style="background:var(--red);color:#fff">Sí, eliminar</button></div>
+ </div>
+</div>
+<div id="svcModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="svcTitle">
+ <form class="mbox" id="svcForm" novalidate>
+  <div class="mhead"><h3 id="svcTitle">Nuevo servicio</h3><button type="button" class="x" data-svcclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
+  <label class="f" for="nsN">Nombre del servicio</label><input id="nsN" maxlength="70" placeholder="Ej. Masaje relajante" autocomplete="off">
+  <div class="row"><div><label class="f" for="nsC">Categoría</label><input id="nsC" list="catsDL" autocomplete="off"></div><div><label class="f" for="nsG">Grupo (opcional)</label><input id="nsG" list="grpDL" autocomplete="off" placeholder="Ej. Masajes localizados"></div></div>
+  <div class="row"><div><label class="f" for="nsM">Duración (min)</label><input id="nsM" type="number" min="5" step="5"></div><div><label class="f" for="nsV">Valor ($)</label><input id="nsV" type="number" min="0" step="500"></div></div>
+  <datalist id="catsDL"></datalist><datalist id="grpDL"></datalist>
+  <div class="err" id="nsErr" role="alert"></div>
+  <button class="btn" style="width:100%" type="submit" id="svcSubmit">Guardar servicio</button>
+  <button class="pill" style="width:100%;margin-top:8px" type="button" data-svcclose>Cancelar</button>
+ </form>
+</div>
 <div id="blkModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="blkTitle">
  <div class="mbox">
   <div class="mhead"><h3 id="blkTitle">Selecciona tus horas no disponibles</h3><button class="x" data-blkclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
@@ -219,6 +241,35 @@ function syncPend(db){
   lastPend.forEach(t=>{if(!want.has(t))del(t)});
   lastPend=want;
 }
+const catList=()=>[...new Set(['Masoterapia','Limpiezas faciales',...S.services.map(x=>x.c).filter(Boolean)])];
+let confFn=null,editSvc=-1;
+function askConfirm(title,msg,fn){confTitle.textContent=title;confMsg.textContent=msg;confFn=fn;confYes.hidden=!fn;confNo.textContent=fn?'Cancelar':'Entendido';confModal.hidden=false;confNo.focus()}
+const closeConf=()=>{confModal.hidden=true;confFn=null};
+function openSvc(i){
+  editSvc=Number.isInteger(i)&&i>=0?i:-1;const ed=editSvc>=0,x=ed?S.services[editSvc]:null;
+  svcTitle.textContent=ed?'Editar servicio':'Nuevo servicio';svcSubmit.textContent=ed?'Guardar cambios':'Guardar servicio';
+  catsDL.innerHTML=catList().map(c=>`<option value="${esc(c)}">`).join('');
+  grpDL.innerHTML=[...new Set(S.services.map(x=>x.g).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('');
+  nsN.value=ed?x.n:'';nsC.value=ed?(x.c||''):(catList().includes(cat.value)?cat.value:'Masoterapia');nsG.value=ed?(x.g||''):'';nsM.value=ed?x.m:60;nsV.value=ed?x.v:'';nsErr.textContent='';
+  svcModal.hidden=false;nsN.focus();
+}
+function saveSvc(e){
+  e.preventDefault();
+  const n=nsN.value.trim(),c=nsC.value.trim(),g=nsG.value.trim(),m=+nsM.value,v=+nsV.value;
+  if(n.length<2){nsErr.textContent='Escribe el nombre del servicio.';return}
+  if(!c){nsErr.textContent='Elige o escribe una categoría.';return}
+  if(!(m>=5)){nsErr.textContent='La duración debe ser de al menos 5 minutos.';return}
+  if(nsV.value===''||!(v>=0)){nsErr.textContent='Escribe el valor del servicio.';return}
+  if(S.services.some((x,i)=>i!==editSvc&&x.n.toLowerCase()===n.toLowerCase())){nsErr.textContent='Ya existe un servicio con ese nombre.';return}
+  const it={n,m,v,c,g};
+  if(editSvc>=0)S.services[editSvc]=it;
+  else{
+    let idx=-1;S.services.forEach((x,i)=>{if(x.c===c&&(x.g||'')===g)idx=i});
+    if(idx<0)S.services.forEach((x,i)=>{if(x.c===c)idx=i});
+    if(idx<0)S.services.push(it);else S.services.splice(idx+1,0,it);
+  }
+  editSvc=-1;svcModal.hidden=true;svc.innerHTML='';render();
+}
 const slotTimes=()=>{const h=S.cfg.horario,p=Math.max(10,+h.paso||30),a=toMin(h.desde),b=toMin(h.hasta),o=[];for(let x=a;x<b;x+=p)o.push(end('00:00',x));return o};
 const slotState=t=>{const p=Math.max(10,+S.cfg.horario.paso||30),x=toMin(t),ov=mine().filter(a=>a.d===sel&&a.e!=='disponible'&&toMin(a.t)<x+p&&x<toMin(a.t)+(+a.m||0));return{busy:ov.some(a=>a.e!=='bloqueado'),blk:ov.some(a=>a.e==='bloqueado'),own:ov.find(a=>a.bq&&a.t===t)}};
 function slotsHtml(){
@@ -294,9 +345,8 @@ function render(){
     +S.branches.map((b,i)=>`<div class="row"><input data-b="${i}" value="${esc(b)}"><button class="x" data-xb="${i}" aria-label="Quitar sucursal">✕</button></div>`).join('')
     +S.thers.map((b,i)=>`<div class="row"><input data-t="${i}" value="${esc(b)}"><button class="x" data-xt="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')
     +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
-    +`<div class="lbl">Servicios: nombre, minutos y valor</div>`
-    +S.services.map((s,i)=>`<div class="srow"><input data-sv="${i}" data-f="n" value="${esc(s.n)}" aria-label="Servicio"><select data-sv="${i}" data-f="c" aria-label="Categoría">${['Masoterapia','Limpiezas faciales'].map(c=>`<option ${c===s.c?'selected':''}>${c}</option>`).join('')}</select><input data-sv="${i}" data-f="g" value="${esc(s.g||'')}" placeholder="Grupo" style="grid-column:2/4" aria-label="Grupo"><input type="number" data-sv="${i}" data-f="m" value="${s.m}" aria-label="Minutos"><input type="number" data-sv="${i}" data-f="v" value="${s.v}" aria-label="Valor"><button class="x" data-xs="${i}" aria-label="Quitar servicio">✕</button></div>`).join('')
-    +`<button class="btn" style="width:100%" id="as">Agregar servicio</button>`
+    +`<div class="lbl">Servicios</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
+    +S.services.map((s,i)=>`<div class="svcard"><div class="svi"><b>${esc(s.n)}</b><div class="mut">${esc(s.c||'Otros')}${s.g?' · '+esc(s.g):''}</div><div class="svm">${s.m} min · ${money(s.v)}</div></div><div class="sva"><button class="pill" data-svcedit="${i}">Editar</button><button class="x" data-xs="${i}" aria-label="Eliminar servicio ${esc(s.n)}">✕</button></div></div>`).join('')
     +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('./',location.href).href)}</b></div>
     <div class="row"><div><label class="f">Abono ($, se descuenta del valor)</label><input type="number" data-c="abono" min="0" step="1000" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (horas)</label><input type="number" data-c="plazo" min="1" value="${S.cfg.plazo}"></div></div>
     <label class="f">Tu WhatsApp (con 56, sin +)</label><input data-c="wa" type="tel" placeholder="56912345678" value="${esc(S.cfg.wa)}">
@@ -340,6 +390,16 @@ document.addEventListener('click',e=>{
   else if(el=g('data-sb'))S.branch=+el.dataset.sb;
   else if(el=g('data-st'))S.ther=+el.dataset.st;
   else if(el=g('data-d')){sel=el.dataset.d;custom=false}
+  else if(el=g('data-svcopen')){openSvc(-1);return}
+  else if(el=g('data-svcedit')){openSvc(+el.dataset.svcedit);return}
+  else if(el=g('data-svcclose')){svcModal.hidden=true;return}
+  else if(e.target.id==='svcModal'){svcModal.hidden=true;return}
+  else if(el=g('data-xs')){const x=S.services[+el.dataset.xs];if(!x)return;
+    if(S.services.length<=1){askConfirm('No se puede eliminar','Debe quedar al menos un servicio en la lista.',null);return}
+    askConfirm('Eliminar servicio',`¿Seguro que quieres eliminar "${x.n}"? Tus clientas dejarán de verlo al reservar. Las horas ya agendadas no se borran.`,()=>{const k=S.services.indexOf(x);if(k>=0)S.services.splice(k,1);svc.innerHTML='';render()});return}
+  else if(el=g('data-confyes')){const f=confFn;closeConf();if(f)f();return}
+  else if(el=g('data-confno')){closeConf();return}
+  else if(e.target.id==='confModal'){closeConf();return}
   else if(el=g('data-blkopen')){blkModal.hidden=false;return}
   else if(el=g('data-blkclose')){blkModal.hidden=true;return}
   else if(e.target.id==='blkModal'){blkModal.hidden=true;return}
@@ -348,13 +408,13 @@ document.addEventListener('click',e=>{
   else if(el=g('data-blkall'))blockAll(el.dataset.blkall==='1')
   else if(el=g('data-goto')){const i=document.getElementById('pick');try{i.showPicker()}catch(_){i.focus();i.click()}return}
   else if(el=g('data-wk')){const k=7*+el.dataset.wk,d=new Date(sel+'T12:00');d.setDate(d.getDate()+k);sel=iso(d);wkS.setDate(wkS.getDate()+k)}
-  else if(el=g('data-xa'))S.appts=S.appts.filter(a=>a.id!=el.dataset.xa);
+  else if(el=g('data-xa')){const a=S.appts.find(x=>x.id==el.dataset.xa);if(!a)return;const id=a.id,nm=a.e==='bloqueado'?'el horario bloqueado':a.e==='disponible'?'el horario disponible':(a.c?'la hora de '+a.c:'esta hora');
+    askConfirm('Eliminar hora',`¿Seguro que quieres eliminar ${nm} del ${fmtD(a.d)} a las ${a.t}? Esta acción no se puede deshacer.`,()=>{S.appts=S.appts.filter(x=>x.id!==id);render()});return}
   else if(el=g('data-xb')){if(S.branches.length>1){S.branches.splice(+el.dataset.xb,1);S.branch=0}}
   else if(el=g('data-xt')){if(S.thers.length>1){S.thers.splice(+el.dataset.xt,1);S.ther=0}}
   else if(el=g('data-xs')){if(S.services.length>1){S.services.splice(+el.dataset.xs,1);svc.innerHTML=''}}
   else if(e.target.id==='at'){const v=nt.value.trim();if(v)S.thers.push(v)}
   else if(e.target.id==='ab'){const v=nb.value.trim();if(v)S.branches.push(v)}
-  else if(e.target.id==='as'){S.services.push({n:'Nuevo servicio',m:60,v:0,c:'Masoterapia',g:'Otros'})}
   else if(e.target.id==='addAppt'){
     if(!time.value)return;const s=S.services[svc.value]||S.services[0];
     S.appts.push({id:Date.now(),k:key(),d:sel,t:time.value,m:+dur.value||s.m,c:client.value.trim(),f:phone.value.trim(),s:s.n,v:+price.value||0,e:estado.value,p:'pendiente'});
@@ -362,7 +422,8 @@ document.addEventListener('click',e=>{
   else return;
   render();
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')blkModal.hidden=true});
+svcForm.addEventListener('submit',saveSvc);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!confModal.hidden)closeConf();else{blkModal.hidden=true;svcModal.hidden=true}}});
 document.addEventListener('change',e=>{
   const t=e.target,d=t.dataset;
   if(t.id==='pick'&&t.value){sel=t.value;custom=true;wkS=monOf(sel)}
