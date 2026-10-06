@@ -130,6 +130,18 @@ body.locked #login{display:block}
   <button class="btn" style="width:100%;margin-top:10px" id="addAppt">Agregar hora</button>
 </div>
 </section></main>
+<div id="svcModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="svcTitle">
+ <form class="mbox" id="svcForm" novalidate>
+  <div class="mhead"><h3 id="svcTitle">Nuevo servicio</h3><button type="button" class="x" data-svcclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
+  <label class="f" for="nsN">Nombre del servicio</label><input id="nsN" maxlength="70" placeholder="Ej. Masaje relajante" autocomplete="off">
+  <div class="row"><div><label class="f" for="nsC">Categoría</label><input id="nsC" list="catsDL" autocomplete="off"></div><div><label class="f" for="nsG">Grupo (opcional)</label><input id="nsG" list="grpDL" autocomplete="off" placeholder="Ej. Masajes localizados"></div></div>
+  <div class="row"><div><label class="f" for="nsM">Duración (min)</label><input id="nsM" type="number" min="5" step="5"></div><div><label class="f" for="nsV">Valor ($)</label><input id="nsV" type="number" min="0" step="500"></div></div>
+  <datalist id="catsDL"></datalist><datalist id="grpDL"></datalist>
+  <div class="err" id="nsErr" role="alert"></div>
+  <button class="btn" style="width:100%" type="submit">Guardar servicio</button>
+  <button class="pill" style="width:100%;margin-top:8px" type="button" data-svcclose>Cancelar</button>
+ </form>
+</div>
 <div id="blkModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="blkTitle">
  <div class="mbox">
   <div class="mhead"><h3 id="blkTitle">Selecciona tus horas no disponibles</h3><button class="x" data-blkclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
@@ -221,6 +233,27 @@ function syncPend(db){
   lastPend.forEach(t=>{if(!want.has(t))del(t)});
   lastPend=want;
 }
+const catList=()=>[...new Set(['Masoterapia','Limpiezas faciales',...S.services.map(x=>x.c).filter(Boolean)])];
+function openSvc(){
+  catsDL.innerHTML=catList().map(c=>`<option value="${esc(c)}">`).join('');
+  grpDL.innerHTML=[...new Set(S.services.map(x=>x.g).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('');
+  nsN.value='';nsC.value=catList().includes(cat.value)?cat.value:'Masoterapia';nsG.value='';nsM.value=60;nsV.value='';nsErr.textContent='';
+  svcModal.hidden=false;nsN.focus();
+}
+function saveSvc(e){
+  e.preventDefault();
+  const n=nsN.value.trim(),c=nsC.value.trim(),g=nsG.value.trim(),m=+nsM.value,v=+nsV.value;
+  if(n.length<2){nsErr.textContent='Escribe el nombre del servicio.';return}
+  if(!c){nsErr.textContent='Elige o escribe una categoría.';return}
+  if(!(m>=5)){nsErr.textContent='La duración debe ser de al menos 5 minutos.';return}
+  if(nsV.value===''||!(v>=0)){nsErr.textContent='Escribe el valor del servicio.';return}
+  if(S.services.some(x=>x.n.toLowerCase()===n.toLowerCase())){nsErr.textContent='Ya existe un servicio con ese nombre.';return}
+  let idx=-1;S.services.forEach((x,i)=>{if(x.c===c&&(x.g||'')===g)idx=i});
+  if(idx<0)S.services.forEach((x,i)=>{if(x.c===c)idx=i});
+  const it={n,m,v,c,g};
+  if(idx<0)S.services.push(it);else S.services.splice(idx+1,0,it);
+  svcModal.hidden=true;svc.innerHTML='';render();
+}
 const slotTimes=()=>{const h=S.cfg.horario,p=Math.max(10,+h.paso||30),a=toMin(h.desde),b=toMin(h.hasta),o=[];for(let x=a;x<b;x+=p)o.push(end('00:00',x));return o};
 const slotState=t=>{const p=Math.max(10,+S.cfg.horario.paso||30),x=toMin(t),ov=mine().filter(a=>a.d===sel&&a.e!=='disponible'&&toMin(a.t)<x+p&&x<toMin(a.t)+(+a.m||0));return{busy:ov.some(a=>a.e!=='bloqueado'),blk:ov.some(a=>a.e==='bloqueado'),own:ov.find(a=>a.bq&&a.t===t)}};
 function slotsHtml(){
@@ -296,9 +329,9 @@ function render(){
     +S.branches.map((b,i)=>`<div class="row"><input data-b="${i}" value="${esc(b)}"><button class="x" data-xb="${i}" aria-label="Quitar sucursal">✕</button></div>`).join('')
     +S.thers.map((b,i)=>`<div class="row"><input data-t="${i}" value="${esc(b)}"><button class="x" data-xt="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')
     +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
-    +`<div class="lbl">Servicios: nombre, minutos y valor</div>`
-    +S.services.map((s,i)=>`<div class="srow"><input data-sv="${i}" data-f="n" value="${esc(s.n)}" aria-label="Servicio"><select data-sv="${i}" data-f="c" aria-label="Categoría">${['Masoterapia','Limpiezas faciales'].map(c=>`<option ${c===s.c?'selected':''}>${c}</option>`).join('')}</select><input data-sv="${i}" data-f="g" value="${esc(s.g||'')}" placeholder="Grupo" style="grid-column:2/4" aria-label="Grupo"><input type="number" data-sv="${i}" data-f="m" value="${s.m}" aria-label="Minutos"><input type="number" data-sv="${i}" data-f="v" value="${s.v}" aria-label="Valor"><button class="x" data-xs="${i}" aria-label="Quitar servicio">✕</button></div>`).join('')
-    +`<button class="btn" style="width:100%" id="as">Agregar servicio</button>`
+    +`<div class="lbl">Servicios: nombre, minutos y valor</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
+    +S.services.map((s,i)=>`<div class="srow"><input data-sv="${i}" data-f="n" value="${esc(s.n)}" aria-label="Servicio"><select data-sv="${i}" data-f="c" aria-label="Categoría">${catList().map(c=>`<option ${c===s.c?'selected':''}>${c}</option>`).join('')}</select><input data-sv="${i}" data-f="g" value="${esc(s.g||'')}" placeholder="Grupo" style="grid-column:2/4" aria-label="Grupo"><input type="number" data-sv="${i}" data-f="m" value="${s.m}" aria-label="Minutos"><input type="number" data-sv="${i}" data-f="v" value="${s.v}" aria-label="Valor"><button class="x" data-xs="${i}" aria-label="Quitar servicio">✕</button></div>`).join('')
+    +``
     +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('./',location.href).href)}</b></div>
     <div class="row"><div><label class="f">Abono ($, se descuenta del valor)</label><input type="number" data-c="abono" min="0" step="1000" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (horas)</label><input type="number" data-c="plazo" min="1" value="${S.cfg.plazo}"></div></div>
     <label class="f">Tu WhatsApp (con 56, sin +)</label><input data-c="wa" type="tel" placeholder="56912345678" value="${esc(S.cfg.wa)}">
@@ -342,6 +375,9 @@ document.addEventListener('click',e=>{
   else if(el=g('data-sb'))S.branch=+el.dataset.sb;
   else if(el=g('data-st'))S.ther=+el.dataset.st;
   else if(el=g('data-d')){sel=el.dataset.d;custom=false}
+  else if(el=g('data-svcopen')){openSvc();return}
+  else if(el=g('data-svcclose')){svcModal.hidden=true;return}
+  else if(e.target.id==='svcModal'){svcModal.hidden=true;return}
   else if(el=g('data-blkopen')){blkModal.hidden=false;return}
   else if(el=g('data-blkclose')){blkModal.hidden=true;return}
   else if(e.target.id==='blkModal'){blkModal.hidden=true;return}
@@ -364,7 +400,8 @@ document.addEventListener('click',e=>{
   else return;
   render();
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')blkModal.hidden=true});
+svcForm.addEventListener('submit',saveSvc);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){blkModal.hidden=true;svcModal.hidden=true}});
 document.addEventListener('change',e=>{
   const t=e.target,d=t.dataset;
   if(t.id==='pick'&&t.value){sel=t.value;custom=true;wkS=monOf(sel)}
