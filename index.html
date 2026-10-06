@@ -35,7 +35,7 @@ button,input,select{font:inherit;color:var(--ink)}
 .day input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 .row{display:flex;gap:8px;margin:8px 0}
 .row>*{flex:1;min-width:0}
-input,select{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 12px;width:100%;font-size:15px}
+input,select,textarea{font:inherit;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 12px;width:100%;font-size:15px}
 .f{display:block;font-size:12px;color:var(--mut);margin:0 0 3px 4px}
 .btn{background:var(--btn);color:var(--btnink);border:0;border-radius:14px;padding:10px 14px;font-size:15px;cursor:pointer;font-weight:500}
 .btn.fit{flex:0 0 auto}
@@ -124,13 +124,33 @@ function migrate(){
   S.branches=S.branches.map(b=>b==='Mi sucursal'?'Catarsis Osorno':b);
   S.thers=S.thers.map(t=>t==='Terapeuta 1'?'Daniela Velásquez':t);
   if(!S.services||!S.services.length)S.services=DEF;
+  S.cfg=Object.assign({abono:30,plazo:24,datos:'',wa:''},S.cfg||{});
   S.appts.forEach(a=>{a.k=a.k.replace('Mi sucursal','Catarsis Osorno').replace('Terapeuta 1','Daniela Velásquez');a.e=a.e||'reservada';a.p=a.p||'pendiente';a.v=a.v||0;a.f=a.f||''});
 }
 migrate();
-let sel=iso(today),editing=false,custom=false,ref=null,skip=false;
+let sel=iso(today),editing=false,custom=false,ref=null,skip=false,gotMain=false,gotRes=false,reservas=[],lastPub={},lastCfg='',firstPub=true,unsubR=null;
 const uidTag=u=>` Tu UID es: <code style="user-select:all;background:var(--tint);padding:2px 6px;border-radius:6px;word-break:break-all">${u.uid}</code> Pégalo en las reglas de Firestore.`;
-const push=()=>ref.set({branches:S.branches,thers:S.thers,services:S.services,appts:S.appts}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')'});
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} if(ref&&!skip)push()};
+const push=()=>ref.set({branches:S.branches,thers:S.thers,services:S.services,cfg:S.cfg,appts:S.appts}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')'});
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} if(ref&&!skip)push();if(ref&&gotMain&&gotRes)syncPublic()};
+function processReservas(){
+  const db=firebase.firestore();let ch=false;
+  reservas.forEach(r=>{
+    const a=S.appts.find(x=>String(x.id)===r.id&&x.e==='disponible');
+    if(a){a.e='reservada';a.c=r.nombre;a.f=r.telefono;a.p='pendiente';a.o=1;ch=true}
+    db.collection('reservas').doc(r.id).delete().catch(()=>{});
+  });
+  reservas=[];if(ch)render();
+}
+function syncPublic(){
+  const db=firebase.firestore(),want={},t0=iso(today);
+  S.appts.filter(a=>a.e==='disponible'&&a.d>=t0).forEach(a=>{want[a.id]={d:a.d,t:a.t,m:a.m,s:a.s,v:a.v,libre:true}});
+  const cfg=JSON.stringify({abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa});
+  if(cfg!==lastCfg){lastCfg=cfg;db.collection('publico').doc('config').set(JSON.parse(cfg)).catch(()=>{})}
+  if(firstPub){firstPub=false;db.collection('horas').get().then(q=>q.forEach(d=>{if(!want[d.id])d.ref.delete().catch(()=>{})})).catch(()=>{})}
+  for(const id in want){const j=JSON.stringify(want[id]);if(lastPub[id]!==j){lastPub[id]=j;db.collection('horas').doc(String(id)).set(want[id]).catch(()=>{})}}
+  for(const id in lastPub){if(!want[id]){delete lastPub[id];db.collection('horas').doc(String(id)).delete().catch(()=>{})}}
+}
+function afterSync(){if(!gotMain||!gotRes)return;processReservas();syncPublic()}
 let unsub=null;
 const lock=on=>document.body.classList.toggle('locked',on);
 function initDB(){
@@ -144,16 +164,18 @@ function initDB(){
     catch(err){loginErr.textContent=MSG[err.code]||'No se pudo entrar. Revisa tus datos.'}});
   outBtn.addEventListener('click',async()=>{try{localStorage.removeItem(KEY)}catch(e){} await auth.signOut();location.reload()});
   auth.onAuthStateChanged(u=>{
-    if(unsub){unsub();unsub=null}
+    if(unsub){unsub();unsub=null}if(unsubR){unsubR();unsubR=null}
     if(!u){ref=null;lock(true);outBtn.classList.add('hide');return}
     lock(false);outBtn.classList.remove('hide');
     ref=db.collection('masajes').doc('datos');
+    gotMain=false;gotRes=false;firstPub=true;lastPub={};
+    unsubR=db.collection('reservas').onSnapshot(q=>{reservas=q.docs.map(d=>({id:d.id,...d.data()}));gotRes=true;afterSync()},()=>{});
     unsub=ref.onSnapshot(s=>{
       if(s.metadata.hasPendingWrites)return;
-      if(s.exists){const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.services=d.services||S.services;S.appts=d.appts||[];
+      if(s.exists){const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.services=d.services||S.services;S.cfg=d.cfg||S.cfg;S.appts=d.appts||[];
         migrate();S.branch=Math.min(S.branch,S.branches.length-1);S.ther=Math.min(S.ther,S.thers.length-1);skip=true;render();skip=false;}
       else push();
-      sync.textContent='Sincronizado en la nube ✓';
+      gotMain=true;sync.textContent='Sincronizado en la nube ✓';afterSync();
     },err=>{sync.innerHTML=err.code==='permission-denied'?'Esta cuenta no tiene permiso para ver la agenda.'+uidTag(u):'Sin conexión con la base de datos ('+(err.code||'error')+')'});
   });
 }
@@ -179,7 +201,11 @@ function render(){
     +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
     +`<div class="lbl">Servicios: nombre, minutos y valor</div>`
     +S.services.map((s,i)=>`<div class="srow"><input data-sv="${i}" data-f="n" value="${esc(s.n)}" aria-label="Servicio"><input type="number" data-sv="${i}" data-f="m" value="${s.m}" aria-label="Minutos"><input type="number" data-sv="${i}" data-f="v" value="${s.v}" aria-label="Valor"><button class="x" data-xs="${i}" aria-label="Quitar servicio">✕</button></div>`).join('')
-    +`<button class="btn" style="width:100%" id="as">Agregar servicio</button>`;
+    +`<button class="btn" style="width:100%" id="as">Agregar servicio</button>`
+    +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('reservas.html',location.href).href)}</b></div>
+    <div class="row"><div><label class="f">Abono (%)</label><input type="number" data-c="abono" min="0" max="100" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (horas)</label><input type="number" data-c="plazo" min="1" value="${S.cfg.plazo}"></div></div>
+    <label class="f">Tu WhatsApp (con 56, sin +)</label><input data-c="wa" type="tel" placeholder="56912345678" value="${esc(S.cfg.wa)}">
+    <label class="f" style="margin-top:8px">Datos de transferencia</label><textarea data-c="datos" rows="4" placeholder="Banco, tipo de cuenta, N°, RUT, correo">${esc(S.cfg.datos)}</textarea>`;
   }
   const single=S.branches.length===1&&S.thers.length===1;
   who.innerHTML=single?`<div class="who"><b>${esc(S.branches[0])}</b><span>${esc(S.thers[0])} · ${ROL}</span></div>`:'';
@@ -228,6 +254,7 @@ document.addEventListener('change',e=>{
   else if(d.b!==undefined){const o=S.branches[+d.b];S.branches[+d.b]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(b===o)a.k=t.value+'|'+r})}
   else if(d.t!==undefined){const o=S.thers[+d.t];S.thers[+d.t]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(r===o)a.k=b+'|'+t.value})}
   else if(d.sv!==undefined){S.services[+d.sv][d.f]=d.f==='n'?t.value:(+t.value||0);svc.innerHTML=''}
+  else if(d.c!==undefined){S.cfg[d.c]=d.c==='abono'||d.c==='plazo'?(+t.value||0):t.value}
   else if(d.e!==undefined){S.appts.find(a=>a.id==d.e).e=t.value}
   else if(d.p!==undefined){S.appts.find(a=>a.id==d.p).p=t.value}
   else return;
