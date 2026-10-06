@@ -90,7 +90,14 @@ input,select{background:var(--bg);border:1px solid var(--line);border-radius:14p
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 // === PEGA AQUÍ LA CONFIGURACIÓN DE FIREBASE ===
-const FIREBASE_CONFIG=null;
+const firebaseConfig = {
+  apiKey: "AIzaSyAwPaavXM-FWkLfVyXBCPmAnryNjumnwHQ",
+  authDomain: "agenda-catarsis.firebaseapp.com",
+  projectId: "agenda-catarsis",
+  storageBucket: "agenda-catarsis.firebasestorage.app",
+  messagingSenderId: "759977913283",
+  appId: "1:759977913283:web:c6e7a79cc371a73b87ab76"
+};
 /* Ejemplo: const FIREBASE_CONFIG={apiKey:"...",authDomain:"...",projectId:"...",storageBucket:"...",messagingSenderId:"...",appId:"..."}; */
 const KEY='masajes-v1',ROL='Cosmetóloga y Masoterapeuta';
 const DEF=[{n:'Masaje relajación',m:60,v:25000},{n:'Masaje descontracturante',m:60,v:28000},{n:'Drenaje linfático',m:60,v:30000},{n:'Maderoterapia',m:60,v:30000},{n:'Limpieza facial',m:60,v:30000},{n:'Extracción de acrocordones',m:30,v:20000}];
