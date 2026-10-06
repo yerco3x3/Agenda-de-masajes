@@ -96,19 +96,21 @@ const fmt=x=>p2(Math.floor(x/60))+':'+p2(x%60);
 const hhmm=x=>p2(Math.floor(x/60))+p2(x%60);
 const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
 const t0=ymd(new Date()),HORIZON=42;
-let t2=0,ag=null,taken=new Set(),svcIdx=0,selDay=null,selT=null,week=mondayOf(t0),filt='all',step=1,busy=false,booked=null,notice='',avail={};
+let tid='admin',oc2={},t2=0,ag=null,taken=new Set(),svcIdx=0,selDay=null,selT=null,week=mondayOf(t0),filt='all',step=1,busy=false,booked=null,notice='',avail={};
 const $=id=>document.getElementById(id);
+const TH=()=>{const l=(ag&&ag.terapeutas)||[];return l.length?l:[{id:'admin',n:'Daniela Velásquez',r:'Cosmetóloga y Masoterapeuta'}]};
+const curTh=()=>TH().find(t=>t.id===tid)||TH()[0];
 const H=()=>Object.assign({dias:[1,2,3,4,5],desde:'10:00',hasta:'19:00',paso:30,adv:2},ag&&ag.horario||{});
 const svc=()=>(ag&&ag.services||[])[svcIdx]||null;
 function timesFor(d,sv){
   const h=H(),paso=Math.max(10,+h.paso||30),a0=toMin(h.desde),a1=toMin(h.hasta),dur=Math.max(5,+sv.m||paso);
   if(!(h.dias||[]).includes(toD(d).getDay()))return[];
-  const oc=((ag.ocupado||{})[d]||[]).map(s=>s.split('-').map(Number));
+  const src=tid==='admin'?(ag.ocupado||{}):(oc2[tid]||{});const oc=(src[d]||[]).map(s=>s.split('-').map(Number));
   const n=new Date(),lim=d===t0?n.getHours()*60+n.getMinutes()+(+h.adv||0)*60:-1;
   const out=[];
   for(let s=a0;s+dur<=a1;s+=paso){
     if(s<lim||oc.some(([x,y])=>s<y&&x<s+dur))continue;
-    let bad=false;for(let b=s;b<s+dur;b+=paso)if(taken.has(d+'_'+hhmm(b))){bad=true;break}
+    let bad=false;for(let b=s;b<s+dur;b+=paso)if(taken.has(tid+'_'+d+'_'+hhmm(b))){bad=true;break}
     if(!bad)out.push(s);
   }
   return out;
@@ -120,12 +122,14 @@ function recompute(){
   if(!selDay||!(avail[selDay]||[]).includes(selT))selT=null;
 }
 function onData(){
+  if(!TH().some(t=>t.id===tid))tid=TH()[0].id;
   if(busy)return;
   const was=selT;recompute();
   if(step===2&&was!==null&&selT===null){notice='Esa hora acaba de ser tomada. Elige otra.';step=1}
   if(step!==3)render();
 }
 db.collection('publico').doc('agenda').onSnapshot(d=>{ag=d.exists?d.data():{};onData()},()=>{$('app').innerHTML='<p class="mut">No se pudo cargar la agenda. Intenta de nuevo más tarde.</p>'});
+db.collection('ocupados').onSnapshot(q=>{oc2={};q.docs.forEach(d=>{oc2[d.id]=d.data().ocupado||{}});onData()},()=>{});
 db.collection('bloques').onSnapshot(q=>{taken=new Set(q.docs.map(d=>d.id));onData()},()=>{});
 function stepper(){
   const L=['Disponibilidad','Identificación','Confirmación'];
@@ -138,8 +142,8 @@ function card(){
   all.forEach((s,i)=>{if((s.c||'Otros')!==cn)return;(gr[s.g||'']=gr[s.g||'']||[]).push(`<option value="${i}" ${i===svcIdx?'selected':''}>${esc(s.n)} · ${s.m} min · ${money(s.v)}</option>`)});
   const sel=Object.entries(gr).map(([g,o])=>g?`<optgroup label="${esc(g)}">${o.join('')}</optgroup>`:o.join('')).join('');
   const tabs=cats.length>1?`<div class="tabs" style="margin:14px 0 0">${cats.map(c=>`<button data-cat="${esc(c)}" class="${c===cn?'on':''}">${esc(c)}</button>`).join('')}</div>`:'';
-  return `<aside class="card"><div class="who"><img class="logo" alt="Catarsis" src="${LOGO}"><div><b>Catarsis Osorno</b><span>Daniela Velásquez</span><span class="acc">Cosmetóloga y Masoterapeuta</span></div></div>
-  ${step===1?`${tabs}<label class="f" for="svc">Servicio</label><select id="svc">${sel}</select>`:''}
+  return `<aside class="card"><div class="who"><img class="logo" alt="Catarsis" src="${LOGO}"><div><b>Catarsis Osorno</b><span>${esc(curTh().n)}</span><span class="acc">${esc(curTh().r||'')}</span></div></div>
+  ${step===1&&TH().length>1?`<label class="f" for="th">Terapeuta</label><select id="th">${TH().map(t=>`<option value="${esc(t.id)}" ${t.id===tid?'selected':''}>${esc(t.n)}</option>`).join('')}</select>`:''}${step===1?`${tabs}<label class="f" for="svc">Servicio</label><select id="svc">${sel}</select>`:''}
   ${selT!==null&&sv?`<dl><dt>Servicio</dt><dd>${esc(sv.n)}</dd><dt>Fecha</dt><dd>${cap(fmtD(selDay))}</dd><dt>Hora</dt><dd>${fmt(selT)} a ${fmt(selT+sv.m)}</dd><dt>Duración</dt><dd>${sv.m} minutos</dd><dt>Valor</dt><dd>${money(sv.v)}</dd></dl>`:`<p class="mut" style="margin:14px 0 0">Elige un día y una hora para ver el detalle.</p>`}</aside>`;
 }
 function render(){
@@ -179,7 +183,7 @@ function view3(app){
   const a=booked;if(!a)return;
   const A=+ag.abono||0,ab=A>0&&A<=100?Math.round(a.v*A/100):Math.min(+a.v,A);
   const msg=encodeURIComponent(`Hola, soy ${a.n}. Reservé ${a.s} el ${fmtD(a.d)} a las ${fmt(a.t)}. Te envío el comprobante del abono.`);
-  app.innerHTML=`<div class="ok"><h3 style="color:var(--grn)">Solicitud enviada</h3><p><b>${esc(a.s)}</b><br>${cap(fmtD(a.d))} · ${fmt(a.t)} a ${fmt(a.t+a.m)}</p>
+  app.innerHTML=`<div class="ok"><h3 style="color:var(--grn)">Solicitud enviada</h3><p><b>${esc(a.s)}</b>${a.th?' con '+esc(a.th):''}<br>${cap(fmtD(a.d))} · ${fmt(a.t)} a ${fmt(a.t+a.m)}</p>
   <p>Tu hora queda <b>pendiente hasta que se pague el abono</b>${ab?` de <b>${money(ab)}</b> (se descuenta del valor del servicio)`:''}. Tienes <b>${ag.plazo||24} horas</b> para transferirlo; pasado ese plazo la hora puede liberarse.</p>
   ${ag.datos?`<pre>${esc(ag.datos)}</pre>`:''}${ag.wa?`<a class="cta" href="https://wa.me/${esc(ag.wa)}?text=${msg}" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>`:''}
   <button class="cta alt" data-go="again">Reservar otra hora</button></div>`;
@@ -197,28 +201,29 @@ document.addEventListener('click',e=>{
   else return;
   render();
 });
-document.addEventListener('change',e=>{if(e.target.id==='svc'){svcIdx=+e.target.value;selT=null;notice='';recompute();render()}});
+document.addEventListener('change',e=>{if(e.target.id==='th'){tid=e.target.value;selT=null;notice='';recompute();render();return}
+  if(e.target.id==='svc'){svcIdx=+e.target.value;selT=null;notice='';recompute();render()}});
 document.addEventListener('submit',async e=>{
   if(e.target.id!=='form')return;e.preventDefault();
   const n=$('nom').value.trim(),t=$('tel').value.trim(),sv=svc(),er=$('err');
   if(!sv||selT===null){step=1;render();return}
   if(n.length<2){er.textContent='Escribe tu nombre.';return}
   if(t.replace(/\D/g,'').length<8){er.textContent='Escribe un teléfono válido.';return}
-  if($('hp').value||Date.now()-t2<2500){booked={d:selDay,t:selT,s:sv.n,m:+sv.m,v:+sv.v,n};step=3;selT=null;render();return}
+  if($('hp').value||Date.now()-t2<2500){booked={d:selDay,t:selT,s:sv.n,m:+sv.m,v:+sv.v,n,th:curTh().n};step=3;selT=null;render();return}
   busy=true;$('send').disabled=true;er.textContent='';
   const d=selDay,s0=selT,dur=Math.max(5,+sv.m),paso=Math.max(10,+H().paso||30),tel=(x=>x.length>9?x.slice(-9):x)(t.replace(/\D/g,''));
   try{
     const b=db.batch(),rr=db.collection('reservas').doc();
-    b.set(rr,{nombre:n,telefono:t,creada:firebase.firestore.FieldValue.serverTimestamp(),d,t:fmt(s0),s:sv.n,m:dur,tel});
+    b.set(rr,{nombre:n,telefono:t,creada:firebase.firestore.FieldValue.serverTimestamp(),d,t:fmt(s0),s:sv.n,m:dur,tel,tid});
     b.set(db.collection('pendientes').doc(tel),{r:rr.id});
-    for(let x=s0;x<s0+dur;x+=paso)b.set(db.collection('bloques').doc(d+'_'+hhmm(x)),{d,t:fmt(x),r:rr.id});
+    for(let x=s0;x<s0+dur;x+=paso)b.set(db.collection('bloques').doc(tid+'_'+d+'_'+hhmm(x)),{d,t:fmt(x),r:rr.id,tid});
     await b.commit();
-    booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n};step=3;busy=false;selT=null;render();
+    booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n,th:curTh().n};step=3;busy=false;selT=null;render();
   }catch(x){
     busy=false;$('send').disabled=false;
     let msg='No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
     if(x.code==='permission-denied'){
-      try{const q=await db.collection('bloques').doc(d+'_'+hhmm(s0)).get();
+      try{const q=await db.collection('bloques').doc(tid+'_'+d+'_'+hhmm(s0)).get();
         if(q.exists)msg='Esa hora ya fue tomada por otra persona. Elige otra.';
         else{const pq=await db.collection('pendientes').doc(tel).get();msg=pq.exists?'Ya tienes una solicitud pendiente de pago con este teléfono. Cuando pagues el abono podrás reservar otra, o escríbenos por WhatsApp.':'No se pudo registrar la reserva (permiso denegado). Escríbenos por WhatsApp para reservar.'}}
       catch(y){msg='La reserva online aún no está activada en la base de datos. Escríbenos por WhatsApp para reservar.'}

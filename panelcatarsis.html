@@ -237,7 +237,7 @@ const save=()=>{if(!guestMode){try{localStorage.setItem(KEY,JSON.stringify(S))}c
 const pubErr=e=>{pubInfo.textContent='No se pudo publicar el horario ('+(e.code||'error')+'). Revisa las reglas de Firestore.'};
 const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
 function processReservas(){
-  const db=firebase.firestore();let ch=false;const items=reservas;reservas=[];
+  const db=firebase.firestore();let ch=false;const mineR=r=>guestMode||!r.tid||r.tid==='admin';const items=reservas.filter(mineR);reservas=reservas.filter(r=>!mineR(r));
   items.forEach((r,i)=>{
     if(!r.d||!r.t||S.appts.some(x=>x.rid===r.id))return;
     const sv=S.services.find(x=>x.n===r.s);
@@ -252,9 +252,10 @@ function processReservas(){
     })});
 }
 function syncPublic(){
+  if(guestMode){syncPublicGuest();return}
   const db=firebase.firestore(),t0=iso(today),oc={};
   S.appts.forEach(a=>{if(a.d<t0||a.e==='disponible')return;const x=toMin(a.t);(oc[a.d]=oc[a.d]||[]).push(x+'-'+(x+(+a.m||0)))});
-  const doc={abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa,horario:S.cfg.horario,services:S.services.map(x=>({n:x.n,m:+x.m,v:+x.v,c:x.c||'Otros',g:x.g||''})),ocupado:oc};
+  const doc={abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa,horario:S.cfg.horario,services:S.services.map(x=>({n:x.n,m:+x.m,v:+x.v,c:x.c||'Otros',g:x.g||''})),ocupado:oc,terapeutas:[{id:'admin',n:S.thers[0],r:ROL},...S.guests.map(g=>({id:g.uid,n:g.n,r:'Terapeuta'}))]};
   const j=JSON.stringify(doc);
   if(j!==lastCfg){lastCfg=j;pubP=db.collection('publico').doc('agenda').set(doc).then(()=>{pubInfo.textContent='Horario publicado para tus clientas ✓'}).catch(pubErr)}
   syncPend(db);
@@ -262,6 +263,13 @@ function syncPublic(){
   if(ju!==lastAcc){lastAcc=ju;db.collection('accesos').doc('lista').set({uids}).catch(pubErr)}
 }
 const nd=f=>{const d=String(f||'').replace(/\D/g,'');return d.length>9?d.slice(-9):d};
+function syncPublicGuest(){
+  const db=firebase.firestore(),t0=iso(today),oc={};
+  S.appts.forEach(a=>{if(a.d<t0||a.e==='disponible')return;const x=toMin(a.t);(oc[a.d]=oc[a.d]||[]).push(x+'-'+(x+(+a.m||0)))});
+  const j=JSON.stringify(oc);
+  if(j!==lastCfg){lastCfg=j;pubP=db.collection('ocupados').doc(firebase.auth().currentUser.uid).set({ocupado:oc,n:S.thers[0]}).catch(()=>{})}
+  syncPend(db);
+}
 function syncPend(db){
   const t0=iso(today),want=new Set();
   S.appts.forEach(a=>{if(a.d>=t0&&a.f&&!['disponible','bloqueado'].includes(a.e)&&a.p==='pendiente'){const t=nd(a.f);if(t.length>=8)want.add(t)}});
@@ -369,6 +377,8 @@ function startGuest(u,db){
   guestMode=true;ROL='Terapeuta invitada';document.body.classList.add('guest');
   S.branches=['Catarsis Osorno'];S.thers=[u.displayName||u.email||'Terapeuta'];S.branch=0;S.ther=0;S.appts=[];
   ref=db.collection('invitados').doc(u.uid);
+  gotMain=false;gotRes=false;lastCfg='';firstPend=true;lastPend=new Set();
+  unsubR=db.collection('reservas').where('tid','==',u.uid).onSnapshot(q=>{reservas=q.docs.map(d=>({id:d.id,...d.data()}));gotRes=true;afterSync()},()=>{});
   unsubA=db.collection('publico').doc('agenda').onSnapshot(d=>{
     if(!d.exists)return;const a=d.data();
     S.services=(a.services||[]).map(x=>({...x}));
@@ -378,7 +388,7 @@ function startGuest(u,db){
   unsub=ref.onSnapshot(q=>{
     if(q.metadata.hasPendingWrites)return;
     if(q.exists)S.appts=q.data().appts||[];else push();
-    sync.textContent='Terapeuta invitada · sincronizado ✓';skip=true;render();skip=false;
+    sync.textContent='Terapeuta invitada · sincronizado ✓';skip=true;render();skip=false;gotMain=true;afterSync();
   },err=>{sync.textContent=err.code==='permission-denied'?'Tu cuenta aún no fue autorizada por la administradora.':'Sin conexión con la base de datos ('+(err.code||'error')+')'});
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
