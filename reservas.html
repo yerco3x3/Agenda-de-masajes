@@ -204,7 +204,13 @@ document.addEventListener('submit',async e=>{
     booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n};step=3;busy=false;selT=null;render();
   }catch(x){
     busy=false;$('send').disabled=false;
-    er.textContent=x.code==='permission-denied'?'Esa hora ya fue tomada por otra persona. Elige otra.':'No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
+    let msg='No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
+    if(x.code==='permission-denied'){
+      try{const q=await db.collection('bloques').doc(d+'_'+hhmm(s0)).get();
+        msg=q.exists?'Esa hora ya fue tomada por otra persona. Elige otra.':'No se pudo registrar la reserva (permiso denegado). Escríbenos por WhatsApp para reservar.'}
+      catch(y){msg='La reserva online aún no está activada en la base de datos. Escríbenos por WhatsApp para reservar.'}
+    }
+    er.textContent=msg+' ['+(x.code||'error')+']';
   }
 });
 stepper();
