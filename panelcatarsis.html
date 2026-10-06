@@ -9,6 +9,10 @@
 <style>
 :root{--bg:#ede1cb;--card:#f8f2e6;--ink:#1f1b16;--teal:#6b5a45;--tint:#e3d4b8;--mut:#6f6558;--line:#d6c7aa;--red:#b8392b;--amb:#a05f00;--grn:#2c7a4b;--btn:#1f1b16;--btnink:#f8f2e6;--onacc:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1a16;--card:#282420;--ink:#f1e7d3;--teal:#d2bb94;--tint:#3a3328;--mut:#a89d8c;--line:#443c30;--amb:#e0a84a;--grn:#5cc08a;--btn:#ede1cb;--btnink:#1f1b16;--onacc:#1d1a16}}
+:root{color-scheme:light dark}
+textarea{color:var(--ink)}
+::placeholder{color:var(--mut);opacity:1}
+option,optgroup{background:var(--card);color:var(--ink)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Barlow,system-ui,sans-serif;padding:20px 16px 40px;max-width:1100px;margin:auto;font-size:15px}
 h1,h2,.cond{font-family:'Barlow Condensed',sans-serif;font-weight:700;margin:0}

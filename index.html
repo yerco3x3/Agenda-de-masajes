@@ -10,6 +10,10 @@
 <style>
 :root{--bg:#ede1cb;--card:#f8f2e6;--ink:#1f1b16;--acc:#6b5a45;--tint:#e3d4b8;--line:#d6c7aa;--mut:#6f6558;--btn:#1f1b16;--btnink:#f8f2e6;--onacc:#fff;--red:#b8392b;--grn:#2c7a4b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1a16;--card:#282420;--ink:#f1e7d3;--acc:#d2bb94;--tint:#3a3328;--line:#443c30;--mut:#a89d8c;--btn:#ede1cb;--btnink:#1f1b16;--onacc:#1d1a16;--grn:#5cc08a}.logo{filter:invert(1)}}
+:root{color-scheme:light dark}
+textarea{color:var(--ink)}
+::placeholder{color:var(--mut);opacity:1}
+option,optgroup{background:var(--card);color:var(--ink)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px Barlow,system-ui,sans-serif;padding:16px 16px 40px;max-width:980px;margin:auto}
 .cond,h1,h2,h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;margin:0}
