@@ -158,7 +158,7 @@ body.locked #login{display:block}
 </div>
 <div id="gModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="gT">
  <form class="mbox" id="gForm" novalidate>
-  <div class="mhead"><h3 id="gT">Invitar terapeuta</h3><button type="button" class="x" data-gclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
+  <div class="mhead"><h3 id="gT">Nuevo terapeuta</h3><button type="button" class="x" data-gclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
   <ol class="mut" style="font-size:13px;padding-left:18px;margin:8px 0">
    <li>En Firebase ve a <b>Authentication → Usuarios</b> y crea su usuario con correo y contraseña.</li>
    <li>Copia su <b>UID</b> y pégalo aquí.</li>
@@ -168,14 +168,14 @@ body.locked #login{display:block}
   <label class="f" for="gE">Correo (para tu referencia)</label><input id="gE" type="email" maxlength="80" autocomplete="off">
   <label class="f" for="gU">UID de Firebase</label><input id="gU" maxlength="40" autocomplete="off" placeholder="Pega el UID de su usuario">
   <div class="err" id="gErr" role="alert"></div>
-  <button class="btn" style="width:100%" type="submit">Autorizar terapeuta</button>
+  <button class="btn" style="width:100%" type="submit">Agregar terapeuta</button>
   <button class="pill" style="width:100%;margin-top:8px" type="button" data-gclose>Cancelar</button>
  </form>
 </div>
 <div id="gvModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="gvT">
  <div class="mbox">
   <div class="mhead"><h3 id="gvT">Agenda</h3><button type="button" class="x" data-gvclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
-  <div class="mut" style="font-size:13px;margin:4px 0 8px">Solo lectura. Ella maneja sus propias horas.</div>
+  <div class="mut" style="font-size:13px;margin:4px 0 8px">Solo lectura. Cada terapeuta maneja sus propias horas.</div>
   <div id="gvB"></div>
   <button class="btn" style="width:100%;margin-top:10px" data-gvclose>Cerrar</button>
  </div>
@@ -230,7 +230,7 @@ migrate();
 const monOf=s=>{const d=new Date(s+'T12:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return d};
 let wkS=new Date(mon),sel=iso(today),editing=false,custom=false,ref=null,skip=false,readOnly=false,gotMain=false,gotRes=false,reservas=[],lastPub={},lastCfg='',firstPub=true,unsubR=null,lastPend=new Set(),firstPend=true,guestMode=false,lastAcc='';
 const uidTag=u=>` Tu UID es: <code style="user-select:all;background:var(--tint);padding:2px 6px;border-radius:6px;word-break:break-all">${u.uid}</code> Pégalo en las reglas de Firestore.`;
-const push0=()=>ref.set(guestMode?{n:S.thers[0],appts:S.appts}:{branches:S.branches,thers:S.thers,services:S.services,cfg:S.cfg,guests:S.guests,appts:S.appts}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')';return false});
+const push0=()=>ref.set(guestMode?{n:S.thers[0],appts:S.appts}:{branches:S.branches,thers:S.thers,services:S.services,cfg:S.cfg,guests:S.guests,appts:S.appts},{merge:true}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')';return false});
 let pushP=Promise.resolve(),pubP=Promise.resolve();
 const push=()=>(pushP=push0());
 const save=()=>{if(!guestMode){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}} if(ref&&!skip&&!readOnly)push();if(ref&&gotMain&&gotRes&&!readOnly)syncPublic()};
@@ -298,6 +298,8 @@ gForm.addEventListener('submit',e=>{
   if(!/^[A-Za-z0-9]{20,40}$/.test(uid)){gErr.textContent='Pega el UID completo de Firebase (letras y números, sin espacios).';return}
   if(S.guests.some(g=>g.uid===uid)){gErr.textContent='Esa persona ya está autorizada.';return}
   S.guests.push({uid,n,e:em});gModal.hidden=true;render();
+  sync.textContent='Guardando terapeuta…';
+  pushP.then(ok=>{sync.textContent=ok===false?'No se pudo guardar al terapeuta en la nube. Revisa las reglas de Firestore.':'Terapeuta agregado y guardado en la nube ✓'});
 });
 function askDel(kind,key,title,msg){pendDel={kind,key};cfT.textContent=title;cfM.textContent=msg;cfModal.hidden=false}
 function openSvc(i=-1){editIdx=i;
@@ -367,14 +369,14 @@ function startAdmin(u,db){
   unsubR=db.collection('reservas').onSnapshot(q=>{reservas=q.docs.map(d=>({id:d.id,...d.data()}));gotRes=true;afterSync()},()=>{});
   unsub=ref.onSnapshot(s=>{
     if(s.metadata.hasPendingWrites)return;
-    if(s.exists){const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.services=d.services||S.services;S.cfg=d.cfg||S.cfg;S.guests=d.guests||[];S.appts=d.appts||[];
+    if(s.exists){const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.services=d.services||S.services;S.cfg=d.cfg||S.cfg;S.guests=d.guests||S.guests||[];S.appts=d.appts||[];
       migrate();S.branch=Math.min(S.branch,S.branches.length-1);S.ther=Math.min(S.ther,S.thers.length-1);skip=true;render();skip=false;}
     else push();
     gotMain=true;sync.textContent='Sincronizado en la nube ✓';afterSync();
   },err=>{sync.innerHTML=err.code==='permission-denied'?'Esta cuenta no tiene permiso para ver la agenda.'+uidTag(u):'Sin conexión con la base de datos ('+(err.code||'error')+')'});
 }
 function startGuest(u,db){
-  guestMode=true;ROL='Terapeuta invitada';document.body.classList.add('guest');
+  guestMode=true;ROL='Terapeuta';document.body.classList.add('guest');
   S.branches=['Catarsis Osorno'];S.thers=[u.displayName||u.email||'Terapeuta'];S.branch=0;S.ther=0;S.appts=[];
   ref=db.collection('invitados').doc(u.uid);
   gotMain=false;gotRes=false;lastCfg='';firstPend=true;lastPend=new Set();
@@ -388,7 +390,7 @@ function startGuest(u,db){
   unsub=ref.onSnapshot(q=>{
     if(q.metadata.hasPendingWrites)return;
     if(q.exists)S.appts=q.data().appts||[];else push();
-    sync.textContent='Terapeuta invitada · sincronizado ✓';skip=true;render();skip=false;gotMain=true;afterSync();
+    sync.textContent='Terapeuta · sincronizado ✓';skip=true;render();skip=false;gotMain=true;afterSync();
   },err=>{sync.textContent=err.code==='permission-denied'?'Tu cuenta aún no fue autorizada por la administradora.':'Sin conexión con la base de datos ('+(err.code||'error')+')'});
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -415,11 +417,7 @@ function render(){
   edBtn.textContent=editing?'Cerrar':'Editar';
   edit.classList.toggle('hide',!editing);
   if(editing){
-    edit.innerHTML=`<div class="lbl" style="margin-top:0">Sucursales y terapeutas</div>`
-    +S.branches.map((b,i)=>`<div class="row"><input data-b="${i}" value="${esc(b)}"><button class="x" data-xb="${i}" aria-label="Quitar sucursal">✕</button></div>`).join('')
-    +S.thers.map((b,i)=>`<div class="row"><input data-t="${i}" value="${esc(b)}"><button class="x" data-xt="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')
-    +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
-    +`<div class="lbl">Terapeutas invitadas (ven y manejan solo sus horas)</div><button class="btn" style="width:100%;margin-bottom:8px" data-ginvite>＋ Invitar terapeuta</button>${S.guests.map((g,i)=>`<div class="svb"><div class="svi"><b>${esc(g.n)}</b><span>${esc(g.e||'')}</span></div><button class="pill" data-gview="${i}">Ver agenda</button><button class="x" data-xg="${i}" aria-label="Quitar terapeuta invitada">✕</button></div>`).join('')}<div class="lbl">Servicios: nombre, minutos y valor</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
+    edit.innerHTML=`<div class="lbl" style="margin-top:0">Terapeutas</div><button class="btn" style="width:100%;margin-bottom:8px" data-ginvite>＋ Nuevo terapeuta</button>${S.guests.map((g,i)=>`<div class="svb"><div class="svi"><b>${esc(g.n)}</b><span>${esc(g.e||'')}</span></div><button class="pill" data-gview="${i}">Ver agenda</button><button class="x" data-xg="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')}<div class="lbl">Servicios: nombre, minutos y valor</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
     +S.services.map((s,i)=>`<div class="svb"><div class="svi"><b>${esc(s.n)}</b><span>${esc(s.c||'Otros')}${s.g?' · '+esc(s.g):''}</span><span>${s.m} min · ${money(s.v)}</span></div><button class="pill" data-svcedit="${i}">Editar</button><button class="x" data-xs="${i}" aria-label="Eliminar servicio">✕</button></div>`).join('')
     +``
     +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('./',location.href).href)}</b></div>
@@ -479,7 +477,7 @@ document.addEventListener('click',e=>{
   else if(el=g('data-xa')){const a=S.appts.find(x=>x.id==el.dataset.xa);if(a)askDel('appt',a.id,'¿Eliminar esta hora?',(a.e==='bloqueado'?'Horario bloqueado':(a.c||'Sin nombre'))+' · '+fmtD(a.d)+' a las '+a.t+' ('+a.s+'). Esta acción no se puede deshacer.');return}
   else if(el=g('data-xb')){const b=S.branches[+el.dataset.xb];if(b&&S.branches.length>1)askDel('branch',+el.dataset.xb,'¿Eliminar esta sucursal?','"'+b+'". Las horas agendadas en ella dejarán de mostrarse en la agenda.');return}
   else if(el=g('data-xt')){const t=S.thers[+el.dataset.xt];if(t&&S.thers.length>1)askDel('ther',+el.dataset.xt,'¿Eliminar a esta terapeuta?','"'+t+'". Las horas agendadas con ella dejarán de mostrarse en la agenda.');return}
-  else if(el=g('data-xg')){const q=S.guests[+el.dataset.xg];if(q)askDel('guest',+el.dataset.xg,'¿Quitar a esta terapeuta invitada?','"'+q.n+'" perderá el acceso a la agenda. Sus horas quedan guardadas.');return}
+  else if(el=g('data-xg')){const q=S.guests[+el.dataset.xg];if(q)askDel('guest',+el.dataset.xg,'¿Quitar a este terapeuta?','"'+q.n+'" perderá el acceso a la agenda. Sus horas quedan guardadas.');return}
   else if(el=g('data-ginvite')){gN.value='';gE.value='';gU.value='';gErr.textContent='';gModal.hidden=false;gN.focus();return}
   else if(el=g('data-gclose')){gModal.hidden=true;return}
   else if(el=g('data-gvclose')){gvModal.hidden=true;return}
