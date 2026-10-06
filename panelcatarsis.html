@@ -194,7 +194,7 @@ function migrate(){
   S.branches=S.branches.map(b=>b==='Mi sucursal'?'Catarsis Osorno':b);
   S.thers=S.thers.map(t=>t==='Terapeuta 1'?'Daniela Velásquez':t);
   if(!S.services||!S.services.length||S.services.some(x=>!x.c))S.services=DEF.map(x=>({...x}));
-  S.cfg=Object.assign({abono:10000,plazo:24,datos:'',wa:''},S.cfg||{});
+  S.cfg=Object.assign({abono:10000,plazo:24,plazoMin:15,datos:'',wa:''},S.cfg||{});
   if(S.cfg.abono>0&&S.cfg.abono<=100)S.cfg.abono=10000;
   S.cfg.horario=Object.assign({dias:[1,2,3,4,5],desde:'10:00',hasta:'19:00',paso:30,adv:2},S.cfg.horario||{});
   S.appts.forEach(a=>{a.k=a.k.replace('Mi sucursal','Catarsis Osorno').replace('Terapeuta 1','Daniela Velásquez');a.e=a.e||'reservada';a.p=a.p||'pendiente';a.v=a.v||0;a.f=a.f||''});
@@ -227,7 +227,7 @@ function processReservas(){
 function syncPublic(){
   const db=firebase.firestore(),t0=iso(today),oc={};
   S.appts.forEach(a=>{if(a.d<t0||a.e==='disponible')return;const x=toMin(a.t);(oc[a.d]=oc[a.d]||[]).push(x+'-'+(x+(+a.m||0)))});
-  const doc={abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa,horario:S.cfg.horario,services:S.services.map(x=>({n:x.n,m:+x.m,v:+x.v,c:x.c||'Otros',g:x.g||''})),ocupado:oc};
+  const doc={abono:S.cfg.abono,plazoMin:S.cfg.plazoMin,datos:S.cfg.datos,wa:S.cfg.wa,horario:S.cfg.horario,services:S.services.map(x=>({n:x.n,m:+x.m,v:+x.v,c:x.c||'Otros',g:x.g||''})),ocupado:oc};
   const j=JSON.stringify(doc);
   if(j!==lastCfg){lastCfg=j;pubP=db.collection('publico').doc('agenda').set(doc).then(()=>{pubInfo.textContent='Horario publicado para tus clientas ✓'+(S.cfg.wa?'':' · ⚠ Falta tu WhatsApp (Editar → Reservas online): sin él tus clientas no ven el botón para enviar el comprobante.')}).catch(pubErr)}
   syncPend(db);
@@ -321,6 +321,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const key=()=>S.branches[S.branch]+'|'+S.thers[S.ther];
 const mine=()=>S.appts.filter(a=>a.k===key());
 const fmtD=s=>{const d=new Date(s+'T12:00');return `${DIA[d.getDay()]} ${d.getDate()} de ${MES[d.getMonth()]}`};
+const plz=m=>{m=+m>0?+m:15;if(m>=60&&m%60===0){const h=m/60;return h+(h===1?' hora':' horas')}return m+' minutos'};
 const money=n=>'$'+Number(n||0).toLocaleString('es-CL');
 const end=(t,m)=>{const [h,n]=t.split(':').map(Number);const x=h*60+n+m;return String(Math.floor(x/60)%24).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
 const wa=p=>{let d=p.replace(/\D/g,'');if(d.length===9)d='56'+d;return 'https://wa.me/'+d};
@@ -331,7 +332,7 @@ const waMsg=a=>{
   L.push(conf?'Tu hora está *confirmada* ✅':'Recibimos tu solicitud de hora:');
   L.push('• Servicio: '+a.s,'• Fecha: '+fmtD(a.d),'• Hora: '+a.t+' a '+end(a.t,a.m),'• Valor: '+money(a.v));
   if(pag)L.push('• Abono recibido: '+money(ab),'• Saldo a pagar en el local: '+money(a.v-ab));
-  else if(!conf){L.push('','Para confirmarla, transfiere el abono de '+money(ab)+' (se descuenta del valor del servicio) dentro de '+(S.cfg.plazo||24)+' horas:');if(S.cfg.datos)L.push(S.cfg.datos);L.push('','Después envíanos el comprobante por este chat.')}
+  else if(!conf){L.push('','Para confirmarla, transfiere el abono de '+money(ab)+' (se descuenta del valor del servicio) dentro de '+plz(S.cfg.plazoMin)+':');if(S.cfg.datos)L.push(S.cfg.datos);L.push('','Después envíanos el comprobante por este chat.')}
   L.push('','Cochrane 450, Osorno');
   return wa(a.f)+'?text='+encodeURIComponent(L.join('\n'));
 };
@@ -348,7 +349,7 @@ function render(){
     +`<div class="lbl">Servicios</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
     +S.services.map((s,i)=>`<div class="svcard"><div class="svi"><b>${esc(s.n)}</b><div class="mut">${esc(s.c||'Otros')}${s.g?' · '+esc(s.g):''}</div><div class="svm">${s.m} min · ${money(s.v)}</div></div><div class="sva"><button class="pill" data-svcedit="${i}">Editar</button><button class="x" data-xs="${i}" aria-label="Eliminar servicio ${esc(s.n)}">✕</button></div></div>`).join('')
     +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('./',location.href).href)}</b></div>
-    <div class="row"><div><label class="f">Abono ($, se descuenta del valor)</label><input type="number" data-c="abono" min="0" step="1000" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (horas)</label><input type="number" data-c="plazo" min="1" value="${S.cfg.plazo}"></div></div>
+    <div class="row"><div><label class="f">Abono ($, se descuenta del valor)</label><input type="number" data-c="abono" min="0" step="1000" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (minutos)</label><input type="number" data-c="plazoMin" min="1" value="${S.cfg.plazoMin}"></div></div>
     <label class="f">Tu WhatsApp (con 56, sin +)</label><input data-c="wa" type="tel" placeholder="56912345678" value="${esc(S.cfg.wa)}">
     <label class="f" style="margin-top:8px">Datos de transferencia</label><textarea data-c="datos" rows="4" placeholder="Banco, tipo de cuenta, N°, RUT, correo">${esc(S.cfg.datos)}</textarea>`
     +`<div class="lbl">Horario de atención (lo que ven tus clientas)</div>
@@ -434,7 +435,7 @@ document.addEventListener('change',e=>{
   else if(d.sv!==undefined){S.services[+d.sv][d.f]=['n','c','g'].includes(d.f)?t.value:(+t.value||0);svc.innerHTML=''}
   else if(d.dia!==undefined){const v=+d.dia,a=S.cfg.horario.dias;S.cfg.horario.dias=t.checked?[...new Set([...a,v])]:a.filter(x=>x!==v)}
   else if(d.h!==undefined){S.cfg.horario[d.h]=(d.h==='paso'||d.h==='adv')?(+t.value||0):t.value}
-  else if(d.c!==undefined){let v=d.c==='abono'||d.c==='plazo'?(+t.value||0):t.value;if(d.c==='wa'){v=String(v).replace(/\D/g,'');if(v.length===9)v='56'+v}S.cfg[d.c]=v}
+  else if(d.c!==undefined){let v=d.c==='abono'||d.c==='plazoMin'?(+t.value||0):t.value;if(d.c==='wa'){v=String(v).replace(/\D/g,'');if(v.length===9)v='56'+v}S.cfg[d.c]=v}
   else if(d.e!==undefined){S.appts.find(a=>a.id==d.e).e=t.value}
   else if(d.p!==undefined){S.appts.find(a=>a.id==d.p).p=t.value}
   else return;
