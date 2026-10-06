@@ -54,6 +54,8 @@ input,select,textarea{font:inherit;background:var(--bg);border:1px solid var(--l
 .pg-pagado{color:var(--grn);font-weight:500}.pg-pendiente{color:var(--amb);font-weight:500}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}.logo{height:clamp(38px,9vw,54px);width:auto;flex:none}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo{filter:invert(1)}}
+.chk{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;margin:0 6px 6px 0;background:var(--card)}.chk input{width:auto;margin:0}
+.appt.s-bloqueado{border-left-color:var(--mut)}
 .hide{display:none}
 #login{display:none}
 body.locked>*:not(#login){display:none!important}
@@ -91,11 +93,12 @@ body.locked #login{display:block}
     <div><label class="f" for="price">Valor ($)</label><input type="number" id="price" min="0" step="500"></div></div>
   <div class="row"><input id="client" placeholder="Nombre del cliente" aria-label="Nombre del cliente"><input id="phone" type="tel" placeholder="Teléfono (ej. 9 1234 5678)" aria-label="Teléfono"></div>
   <label class="f" for="estado">Estado de la hora</label>
-  <select id="estado"><option value="reservada">Reservada</option><option value="confirmada">Confirmada</option><option value="disponible">Disponible</option></select>
+  <select id="estado"><option value="reservada">Reservada</option><option value="confirmada">Confirmada</option><option value="bloqueado">Bloqueado (no disponible)</option></select>
   <button class="btn" style="width:100%;margin-top:10px" id="addAppt">Agregar hora</button>
 </div>
 </section></main>
 <div class="mut" id="sync" style="margin-top:28px;font-size:14px"></div>
+<div class="mut" id="pubInfo" style="font-size:14px;margin-top:4px"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -125,30 +128,39 @@ function migrate(){
   S.thers=S.thers.map(t=>t==='Terapeuta 1'?'Daniela Velásquez':t);
   if(!S.services||!S.services.length)S.services=DEF;
   S.cfg=Object.assign({abono:30,plazo:24,datos:'',wa:''},S.cfg||{});
+  S.cfg.horario=Object.assign({dias:[1,2,3,4,5],desde:'10:00',hasta:'19:00',paso:30,adv:2},S.cfg.horario||{});
   S.appts.forEach(a=>{a.k=a.k.replace('Mi sucursal','Catarsis Osorno').replace('Terapeuta 1','Daniela Velásquez');a.e=a.e||'reservada';a.p=a.p||'pendiente';a.v=a.v||0;a.f=a.f||''});
 }
 migrate();
 let sel=iso(today),editing=false,custom=false,ref=null,skip=false,gotMain=false,gotRes=false,reservas=[],lastPub={},lastCfg='',firstPub=true,unsubR=null;
 const uidTag=u=>` Tu UID es: <code style="user-select:all;background:var(--tint);padding:2px 6px;border-radius:6px;word-break:break-all">${u.uid}</code> Pégalo en las reglas de Firestore.`;
-const push=()=>ref.set({branches:S.branches,thers:S.thers,services:S.services,cfg:S.cfg,appts:S.appts}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')'});
+const push0=()=>ref.set({branches:S.branches,thers:S.thers,services:S.services,cfg:S.cfg,appts:S.appts}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')';return false});
+let pushP=Promise.resolve(),pubP=Promise.resolve();
+const push=()=>(pushP=push0());
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} if(ref&&!skip)push();if(ref&&gotMain&&gotRes)syncPublic()};
+const pubErr=e=>{pubInfo.textContent='No se pudo publicar el horario ('+(e.code||'error')+'). Revisa las reglas de Firestore.'};
+const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
 function processReservas(){
-  const db=firebase.firestore();let ch=false;
-  reservas.forEach(r=>{
-    const a=S.appts.find(x=>String(x.id)===r.id&&x.e==='disponible');
-    if(a){a.e='reservada';a.c=r.nombre;a.f=r.telefono;a.p='pendiente';a.o=1;ch=true}
-    db.collection('reservas').doc(r.id).delete().catch(()=>{});
+  const db=firebase.firestore();let ch=false;const items=reservas;reservas=[];
+  items.forEach((r,i)=>{
+    if(!r.d||!r.t||S.appts.some(x=>x.rid===r.id))return;
+    const sv=S.services.find(x=>x.n===r.s);
+    S.appts.push({id:Date.now()+i,rid:r.id,k:S.branches[0]+'|'+S.thers[0],d:r.d,t:r.t,m:sv?sv.m:Math.max(15,Math.min(240,+r.m||60)),c:r.nombre,f:r.telefono,s:sv?sv.n:String(r.s||'').slice(0,80),v:sv?sv.v:0,e:'reservada',p:'pendiente',o:1});ch=true;
   });
-  reservas=[];if(ch)render();
+  if(ch)render();
+  if(!items.length)return;
+  Promise.all([pushP,pubP]).then(([ok])=>{if(ok===false)return;
+    items.forEach(r=>{
+      db.collection('bloques').where('r','==',r.id).get().then(q=>q.forEach(d=>d.ref.delete())).catch(()=>{});
+      db.collection('reservas').doc(r.id).delete().catch(()=>{});
+    })});
 }
 function syncPublic(){
-  const db=firebase.firestore(),want={},t0=iso(today);
-  S.appts.filter(a=>a.e==='disponible'&&a.d>=t0).forEach(a=>{want[a.id]={d:a.d,t:a.t,m:a.m,s:a.s,v:a.v,libre:true}});
-  const cfg=JSON.stringify({abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa});
-  if(cfg!==lastCfg){lastCfg=cfg;db.collection('publico').doc('config').set(JSON.parse(cfg)).catch(()=>{})}
-  if(firstPub){firstPub=false;db.collection('horas').get().then(q=>q.forEach(d=>{if(!want[d.id])d.ref.delete().catch(()=>{})})).catch(()=>{})}
-  for(const id in want){const j=JSON.stringify(want[id]);if(lastPub[id]!==j){lastPub[id]=j;db.collection('horas').doc(String(id)).set(want[id]).catch(()=>{})}}
-  for(const id in lastPub){if(!want[id]){delete lastPub[id];db.collection('horas').doc(String(id)).delete().catch(()=>{})}}
+  const db=firebase.firestore(),t0=iso(today),oc={};
+  S.appts.forEach(a=>{if(a.d<t0||a.e==='disponible')return;const x=toMin(a.t);(oc[a.d]=oc[a.d]||[]).push(x+'-'+(x+(+a.m||0)))});
+  const doc={abono:S.cfg.abono,plazo:S.cfg.plazo,datos:S.cfg.datos,wa:S.cfg.wa,horario:S.cfg.horario,services:S.services.map(x=>({n:x.n,m:+x.m,v:+x.v})),ocupado:oc};
+  const j=JSON.stringify(doc);
+  if(j!==lastCfg){lastCfg=j;pubP=db.collection('publico').doc('agenda').set(doc).then(()=>{pubInfo.textContent='Horario publicado para tus clientas ✓'}).catch(pubErr)}
 }
 function afterSync(){if(!gotMain||!gotRes)return;processReservas();syncPublic()}
 let unsub=null;
@@ -168,7 +180,7 @@ function initDB(){
     if(!u){ref=null;lock(true);outBtn.classList.add('hide');return}
     lock(false);outBtn.classList.remove('hide');
     ref=db.collection('masajes').doc('datos');
-    gotMain=false;gotRes=false;firstPub=true;lastPub={};
+    gotMain=false;gotRes=false;firstPub=true;lastPub={};lastCfg='';
     unsubR=db.collection('reservas').onSnapshot(q=>{reservas=q.docs.map(d=>({id:d.id,...d.data()}));gotRes=true;afterSync()},()=>{});
     unsub=ref.onSnapshot(s=>{
       if(s.metadata.hasPendingWrites)return;
@@ -205,7 +217,12 @@ function render(){
     +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('reservas.html',location.href).href)}</b></div>
     <div class="row"><div><label class="f">Abono (%)</label><input type="number" data-c="abono" min="0" max="100" value="${S.cfg.abono}"></div><div><label class="f">Plazo para pagar (horas)</label><input type="number" data-c="plazo" min="1" value="${S.cfg.plazo}"></div></div>
     <label class="f">Tu WhatsApp (con 56, sin +)</label><input data-c="wa" type="tel" placeholder="56912345678" value="${esc(S.cfg.wa)}">
-    <label class="f" style="margin-top:8px">Datos de transferencia</label><textarea data-c="datos" rows="4" placeholder="Banco, tipo de cuenta, N°, RUT, correo">${esc(S.cfg.datos)}</textarea>`;
+    <label class="f" style="margin-top:8px">Datos de transferencia</label><textarea data-c="datos" rows="4" placeholder="Banco, tipo de cuenta, N°, RUT, correo">${esc(S.cfg.datos)}</textarea>`
+    +`<div class="lbl">Horario de atención (lo que ven tus clientas)</div>
+    <div>${[['1','Lun'],['2','Mar'],['3','Mié'],['4','Jue'],['5','Vie'],['6','Sáb'],['0','Dom']].map(([v,l])=>`<label class="chk"><input type="checkbox" data-dia="${v}" ${S.cfg.horario.dias.includes(+v)?'checked':''}>${l}</label>`).join('')}</div>
+    <div class="row"><div><label class="f">Desde</label><input type="time" data-h="desde" value="${S.cfg.horario.desde}"></div><div><label class="f">Hasta</label><input type="time" data-h="hasta" value="${S.cfg.horario.hasta}"></div></div>
+    <div class="row"><div><label class="f">Intervalo entre horas (min)</label><input type="number" data-h="paso" min="10" step="5" value="${S.cfg.horario.paso}"></div><div><label class="f">Anticipación mínima (horas)</label><input type="number" data-h="adv" min="0" value="${S.cfg.horario.adv}"></div></div>
+    <div class="mut" style="font-size:13px">Tus clientas ven libre todo este horario, excepto lo que tengas agendado o bloqueado aquí.</div>`;
   }
   const single=S.branches.length===1&&S.thers.length===1;
   who.innerHTML=single?`<div class="who"><b>${esc(S.branches[0])}</b><span>${esc(S.thers[0])} · ${ROL}</span></div>`:'';
@@ -222,9 +239,9 @@ function render(){
   days.innerHTML=h;
   dayTitle.innerHTML=sel===iso(today)?`<span style="color:var(--teal)">Hoy</span>, ${fmtD(sel)}`:fmtD(sel);
   const L=L0.filter(a=>a.d===sel).sort((a,b)=>a.t.localeCompare(b.t));
-  const pend=L.filter(a=>a.e!=='disponible'&&a.p==='pendiente').length;
+  const pend=L.filter(a=>!['disponible','bloqueado'].includes(a.e)&&a.p==='pendiente').length;
   dayInfo.textContent=L.length?`${L.length} hora${L.length==1?'':'s'} agendada${L.length==1?'':'s'}`+(pend?` · ${pend} abono${pend==1?'':'s'} pendiente${pend==1?'':'s'}`:''):'Sin horas agendadas.';
-  list.innerHTML=L.map(a=>{const free=a.e==='disponible';return `<div class="appt s-${a.e}"><div class="t">${a.t}</div><div class="i"><b>${free?'Horario disponible':esc(a.c||'Sin nombre')}</b>${a.f&&!free?` · <a href="${wa(a.f)}" target="_blank" rel="noopener">${esc(a.f)}</a>`:''}<div class="mut">${esc(a.s)} · hasta ${end(a.t,a.m)} · ${money(a.v)}</div></div><button class="x" style="flex-basis:38px;height:38px" data-xa="${a.id}" aria-label="Quitar hora">✕</button><div class="ctl"><select data-e="${a.id}" aria-label="Estado">${opt([['disponible','Disponible'],['reservada','Reservada'],['confirmada','Confirmada']],a.e)}</select>${free?'':`<select class="pg-${a.p}" data-p="${a.id}" aria-label="Abono">${opt([['pendiente','Abono pendiente'],['pagado','Abono pagado']],a.p)}</select>`}</div></div>`}).join('');
+  list.innerHTML=L.map(a=>{const free=a.e==='disponible'||a.e==='bloqueado';return `<div class="appt s-${a.e}"><div class="t">${a.t}</div><div class="i"><b>${a.e==='bloqueado'?'Horario bloqueado':a.e==='disponible'?'Horario disponible':esc(a.c||'Sin nombre')}</b>${a.f&&!free?` · <a href="${wa(a.f)}" target="_blank" rel="noopener">${esc(a.f)}</a>`:''}<div class="mut">${esc(a.s)} · hasta ${end(a.t,a.m)} · ${money(a.v)}</div></div><button class="x" style="flex-basis:38px;height:38px" data-xa="${a.id}" aria-label="Quitar hora">✕</button><div class="ctl"><select data-e="${a.id}" aria-label="Estado">${opt([...(a.e==='disponible'?[['disponible','Disponible']]:[]),['bloqueado','Bloqueado'],['reservada','Reservada'],['confirmada','Confirmada']],a.e)}</select>${free?'':`<select class="pg-${a.p}" data-p="${a.id}" aria-label="Abono">${opt([['pendiente','Abono pendiente'],['pagado','Abono pagado']],a.p)}</select>`}</div></div>`}).join('');
   save();
 }
 document.addEventListener('click',e=>{
@@ -254,6 +271,8 @@ document.addEventListener('change',e=>{
   else if(d.b!==undefined){const o=S.branches[+d.b];S.branches[+d.b]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(b===o)a.k=t.value+'|'+r})}
   else if(d.t!==undefined){const o=S.thers[+d.t];S.thers[+d.t]=t.value;S.appts.forEach(a=>{const [b,r]=a.k.split('|');if(r===o)a.k=b+'|'+t.value})}
   else if(d.sv!==undefined){S.services[+d.sv][d.f]=d.f==='n'?t.value:(+t.value||0);svc.innerHTML=''}
+  else if(d.dia!==undefined){const v=+d.dia,a=S.cfg.horario.dias;S.cfg.horario.dias=t.checked?[...new Set([...a,v])]:a.filter(x=>x!==v)}
+  else if(d.h!==undefined){S.cfg.horario[d.h]=(d.h==='paso'||d.h==='adv')?(+t.value||0):t.value}
   else if(d.c!==undefined){S.cfg[d.c]=d.c==='abono'||d.c==='plazo'?(+t.value||0):t.value}
   else if(d.e!==undefined){S.appts.find(a=>a.id==d.e).e=t.value}
   else if(d.p!==undefined){S.appts.find(a=>a.id==d.p).p=t.value}
