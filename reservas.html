@@ -58,6 +58,8 @@ pre{white-space:pre-wrap;font:inherit;background:var(--bg);border-radius:10px;pa
 a.cta{display:block;text-align:center;text-decoration:none}
 .note{background:var(--tint);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:14px}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+
+select{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0 2px;font:inherit}
 </style></head><body>
 <div class="bar"><button class="back" id="back" aria-label="Volver" hidden>‹</button><div id="stepper" style="flex:1"></div></div>
 <div id="app"><p class="mut">Cargando horas disponibles…</p></div>
@@ -84,54 +86,78 @@ const addD=(s,n)=>{const d=toD(s);d.setDate(d.getDate()+n);return ymd(d)};
 const mondayOf=s=>{const d=toD(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return ymd(d)};
 const fmtD=s=>{const d=toD(s);return `${DIA[d.getDay()]} ${d.getDate()} de ${MES[d.getMonth()]}`};
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
-const end=(t,m)=>{const [h,n]=t.split(':').map(Number);const x=h*60+n+m;return String(Math.floor(x/60)%24).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
-const now=new Date(),t0=ymd(now),hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-let cfg={abono:30,plazo:24,datos:'',wa:''},slots=[],selDay=null,selId=null,week=mondayOf(t0),filt='all',step=1,busy=false,booked=null,notice='',loaded=false;
+const p2=n=>String(n).padStart(2,'0');
+const fmt=x=>p2(Math.floor(x/60))+':'+p2(x%60);
+const hhmm=x=>p2(Math.floor(x/60))+p2(x%60);
+const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
+const t0=ymd(new Date()),HORIZON=42;
+let ag=null,taken=new Set(),svcIdx=0,selDay=null,selT=null,week=mondayOf(t0),filt='all',step=1,busy=false,booked=null,notice='',avail={};
 const $=id=>document.getElementById(id);
-db.collection('publico').doc('config').get().then(d=>{if(d.exists)cfg=Object.assign(cfg,d.data());if(step===3)render()}).catch(()=>{});
-db.collection('horas').where('libre','==',true).onSnapshot(q=>{
-  slots=q.docs.map(d=>({id:d.id,...d.data()})).filter(a=>a.d>t0||(a.d===t0&&a.t>hm)).sort((a,b)=>(a.d+a.t).localeCompare(b.d+b.t));
-  loaded=true;
-  if(!slots.some(a=>a.id===selId)){
-    if(selId&&step===2&&!busy){notice='Esa hora acaba de ser tomada. Elige otra.';step=1}
-    if(!busy)selId=null;
+const H=()=>Object.assign({dias:[1,2,3,4,5],desde:'10:00',hasta:'19:00',paso:30,adv:2},ag&&ag.horario||{});
+const svc=()=>(ag&&ag.services||[])[svcIdx]||null;
+function timesFor(d,sv){
+  const h=H(),paso=Math.max(10,+h.paso||30),a0=toMin(h.desde),a1=toMin(h.hasta),dur=Math.max(5,+sv.m||paso);
+  if(!(h.dias||[]).includes(toD(d).getDay()))return[];
+  const oc=((ag.ocupado||{})[d]||[]).map(s=>s.split('-').map(Number));
+  const n=new Date(),lim=d===t0?n.getHours()*60+n.getMinutes()+(+h.adv||0)*60:-1;
+  const out=[];
+  for(let s=a0;s+dur<=a1;s+=paso){
+    if(s<lim||oc.some(([x,y])=>s<y&&x<s+dur))continue;
+    let bad=false;for(let b=s;b<s+dur;b+=paso)if(taken.has(d+'_'+hhmm(b))){bad=true;break}
+    if(!bad)out.push(s);
   }
-  if(!slots.some(a=>a.d===selDay)){selDay=slots.length?slots[0].d:null;if(selDay)week=mondayOf(selDay)}
-  if(step!==3&&!busy)render();
-},()=>{$('app').innerHTML='<p class="mut">No se pudieron cargar las horas. Intenta de nuevo más tarde.</p>'});
+  return out;
+}
+function recompute(){
+  avail={};const sv=svc();if(!ag||!sv)return;
+  for(let i=0;i<HORIZON;i++){const d=addD(t0,i),t=timesFor(d,sv);if(t.length)avail[d]=t}
+  if(!avail[selDay]){selDay=Object.keys(avail)[0]||null;if(selDay)week=mondayOf(selDay)}
+  if(!selDay||!(avail[selDay]||[]).includes(selT))selT=null;
+}
+function onData(){
+  if(busy)return;
+  const was=selT;recompute();
+  if(step===2&&was!==null&&selT===null){notice='Esa hora acaba de ser tomada. Elige otra.';step=1}
+  if(step!==3)render();
+}
+db.collection('publico').doc('agenda').onSnapshot(d=>{ag=d.exists?d.data():{};onData()},()=>{$('app').innerHTML='<p class="mut">No se pudo cargar la agenda. Intenta de nuevo más tarde.</p>'});
+db.collection('bloques').onSnapshot(q=>{taken=new Set(q.docs.map(d=>d.id));onData()},()=>{});
 function stepper(){
   const L=['Disponibilidad','Identificación','Confirmación'];
   $('stepper').innerHTML=`<ol class="st">${L.map((l,i)=>{const n=i+1,c=n<step?'done':n===step?'cur':'';return `<li class="${c}"><span class="dot">${n<step?'✓':n}</span>${l}</li>`}).join('')}</ol>`;
   $('back').hidden=step!==2;
 }
 function card(){
-  const a=slots.find(x=>x.id===selId);
-  return `<aside class="card"><div class="who"><img class="logo" alt="Catarsis" src="${LOGO}"><div><b>Catarsis Osorno</b><span>Daniela Velásquez</span><span class="acc">Cosmetóloga y Masoterapeuta</span></div></div>`
-  +(a?`<dl><dt>Servicio</dt><dd>${esc(a.s)}</dd><dt>Fecha</dt><dd>${cap(fmtD(a.d))}</dd><dt>Hora</dt><dd>${a.t} a ${end(a.t,a.m)}</dd><dt>Duración</dt><dd>${a.m} minutos</dd><dt>Valor</dt><dd>${money(a.v)}</dd></dl>`:`<p class="mut" style="margin:14px 0 0">Elige un día y una hora para ver el detalle.</p>`)+`</aside>`;
+  const sv=svc();
+  const sel=(ag.services||[]).map((s,i)=>`<option value="${i}" ${i===svcIdx?'selected':''}>${esc(s.n)} · ${s.m} min · ${money(s.v)}</option>`).join('');
+  return `<aside class="card"><div class="who"><img class="logo" alt="Catarsis" src="${LOGO}"><div><b>Catarsis Osorno</b><span>Daniela Velásquez</span><span class="acc">Cosmetóloga y Masoterapeuta</span></div></div>
+  ${step===1?`<label class="f" for="svc">Servicio</label><select id="svc">${sel}</select>`:''}
+  ${selT!==null&&sv?`<dl><dt>Servicio</dt><dd>${esc(sv.n)}</dd><dt>Fecha</dt><dd>${cap(fmtD(selDay))}</dd><dt>Hora</dt><dd>${fmt(selT)} a ${fmt(selT+sv.m)}</dd><dt>Duración</dt><dd>${sv.m} minutos</dd><dt>Valor</dt><dd>${money(sv.v)}</dd></dl>`:`<p class="mut" style="margin:14px 0 0">Elige un día y una hora para ver el detalle.</p>`}</aside>`;
 }
 function render(){
   stepper();
-  const app=$('app');
-  if(step===1)return view1(app);
-  if(step===2)return view2(app);
-  view3(app);
+  if(ag===null)return;
+  if(step===1)return view1($('app'));
+  if(step===2)return view2($('app'));
+  view3($('app'));
 }
 function view1(app){
-  if(!loaded)return;
-  if(!slots.length){app.innerHTML=`<div class="card" style="max-width:520px;margin:auto"><h3>No hay horas disponibles por ahora</h3><p class="mut">Pronto publicaremos nuevas horas.</p>${cfg.wa?`<a class="cta" href="https://wa.me/${esc(cfg.wa)}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>`:''}</div>`;return}
-  const has=new Set(slots.map(a=>a.d)),max=slots[slots.length-1].d,wEnd=addD(week,6);
-  let days='';
-  for(let i=0;i<7;i++){const d=addD(week,i),h=has.has(d);days+=`<button class="day ${h?'has':''} ${d===selDay?'on':''}" ${h?'':'disabled'} data-day="${d}" aria-pressed="${d===selDay}"><small>${DC[toD(d).getDay()]}</small><b>${toD(d).getDate()}</b></button>`}
+  const sv=svc();
+  if(!sv){app.innerHTML='<div class="card" style="max-width:520px;margin:auto"><h3>Reservas no disponibles por ahora</h3></div>';return}
+  const keys=Object.keys(avail);
+  if(!keys.length){app.innerHTML=`<div class="grid">${card()}<div class="card"><h3>No hay horas disponibles por ahora</h3><p class="mut">Prueba con otro servicio o vuelve más tarde.</p>${ag.wa?`<a class="cta" href="https://wa.me/${esc(ag.wa)}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>`:''}</div></div>`;return}
+  const wEnd=addD(week,6),lastD=addD(t0,HORIZON-1);let days='';
+  for(let i=0;i<7;i++){const d=addD(week,i),h=!!avail[d];days+=`<button class="day ${h?'has':''} ${d===selDay?'on':''}" ${h?'':'disabled'} data-day="${d}" aria-pressed="${d===selDay}"><small>${DC[toD(d).getDay()]}</small><b>${toD(d).getDate()}</b></button>`}
   const w0=toD(week),w1=toD(wEnd);
-  const day=slots.filter(a=>a.d===selDay&&(filt==='all'||(filt==='am'?a.t<'13:00':a.t>='13:00')));
+  const day=(avail[selDay]||[]).filter(x=>filt==='all'||(filt==='am'?x<780:x>=780));
   app.innerHTML=`<div class="grid">${card()}<section>
   ${notice?`<div class="note" role="alert">${esc(notice)}</div>`:''}
   <h3>Semana del ${w0.getDate()}${w0.getMonth()!==w1.getMonth()?' de '+MES[w0.getMonth()]:''} al ${w1.getDate()} de ${MES[w1.getMonth()]}</h3>
-  <div class="wk"><button class="nav" data-wk="-1" aria-label="Semana anterior" ${week<=mondayOf(t0)?'disabled':''}>‹</button><div class="days">${days}</div><button class="nav" data-wk="1" aria-label="Semana siguiente" ${wEnd>=max?'disabled':''}>›</button></div>
+  <div class="wk"><button class="nav" data-wk="-1" aria-label="Semana anterior" ${week<=mondayOf(t0)?'disabled':''}>‹</button><div class="days">${days}</div><button class="nav" data-wk="1" aria-label="Semana siguiente" ${wEnd>=lastD?'disabled':''}>›</button></div>
   <h3>${selDay?cap(fmtD(selDay)):''}</h3>
   <div class="tabs">${[['all','Todos los horarios'],['am','Mañana'],['pm','Tarde']].map(([k,l])=>`<button data-f="${k}" class="${filt===k?'on':''}">${l}</button>`).join('')}</div>
-  <div class="chips">${day.map(a=>`<button class="chip ${a.id===selId?'on':''}" data-slot="${esc(a.id)}" aria-pressed="${a.id===selId}"><b>${a.t}</b><small>${esc(a.s)}</small></button>`).join('')||'<p class="mut">No hay horas en este horario.</p>'}</div>
-  <button class="cta" data-go="next" ${selId?'':'disabled'}>Reservar</button></section></div>`;
+  <div class="chips">${day.map(x=>`<button class="chip ${x===selT?'on':''}" data-t="${x}" aria-pressed="${x===selT}"><b>${fmt(x)}</b></button>`).join('')||'<p class="mut">No hay horas en este horario.</p>'}</div>
+  <button class="cta" data-go="next" ${selT!==null?'':'disabled'}>Reservar</button></section></div>`;
 }
 function view2(app){
   app.innerHTML=`<div class="grid">${card()}<form id="form" novalidate><h3>Tus datos</h3><p class="mut" style="margin:0 0 6px">Los usaremos solo para contactarte por tu reserva.</p>
@@ -142,38 +168,40 @@ function view2(app){
 }
 function view3(app){
   const a=booked;if(!a)return;
-  const ab=Math.round(a.v*(cfg.abono||0)/100);
-  const msg=encodeURIComponent(`Hola, soy ${a.n}. Reservé ${a.s} el ${fmtD(a.d)} a las ${a.t}. Te envío el comprobante del abono.`);
-  app.innerHTML=`<div class="ok"><h3 style="color:var(--grn)">Solicitud enviada</h3><p><b>${esc(a.s)}</b><br>${cap(fmtD(a.d))} · ${a.t} a ${end(a.t,a.m)}</p>
-  <p>Tu hora queda <b>pendiente hasta que se pague el abono</b>${ab?` de <b>${money(ab)}</b>`:''}. Tienes <b>${cfg.plazo||24} horas</b> para transferirlo; pasado ese plazo la hora puede liberarse.</p>
-  ${cfg.datos?`<pre>${esc(cfg.datos)}</pre>`:''}${cfg.wa?`<a class="cta" href="https://wa.me/${esc(cfg.wa)}?text=${msg}" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>`:''}
+  const ab=Math.round(a.v*(ag.abono||0)/100);
+  const msg=encodeURIComponent(`Hola, soy ${a.n}. Reservé ${a.s} el ${fmtD(a.d)} a las ${fmt(a.t)}. Te envío el comprobante del abono.`);
+  app.innerHTML=`<div class="ok"><h3 style="color:var(--grn)">Solicitud enviada</h3><p><b>${esc(a.s)}</b><br>${cap(fmtD(a.d))} · ${fmt(a.t)} a ${fmt(a.t+a.m)}</p>
+  <p>Tu hora queda <b>pendiente hasta que se pague el abono</b>${ab?` de <b>${money(ab)}</b>`:''}. Tienes <b>${ag.plazo||24} horas</b> para transferirlo; pasado ese plazo la hora puede liberarse.</p>
+  ${ag.datos?`<pre>${esc(ag.datos)}</pre>`:''}${ag.wa?`<a class="cta" href="https://wa.me/${esc(ag.wa)}?text=${msg}" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>`:''}
   <button class="cta alt" data-go="again">Reservar otra hora</button></div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.addEventListener('click',e=>{
   const g=k=>e.target.closest('['+k+']');let el;
-  if(el=g('data-day')){selDay=el.dataset.day;selId=null;notice=''}
-  else if(el=g('data-wk')){week=addD(week,7*+el.dataset.wk);const d=slots.find(a=>a.d>=week&&a.d<=addD(week,6));if(d){selDay=d.d;selId=null}}
+  if(el=g('data-day')){selDay=el.dataset.day;selT=null;notice=''}
+  else if(el=g('data-wk')){week=addD(week,7*+el.dataset.wk);const d=Object.keys(avail).find(x=>x>=week&&x<=addD(week,6));if(d){selDay=d;selT=null}}
   else if(el=g('data-f'))filt=el.dataset.f;
-  else if(el=g('data-slot')){selId=el.dataset.slot;notice=''}
-  else if(el=g('data-go')){const v=el.dataset.go;if(v==='next'&&selId)step=2;else if(v==='back')step=1;else if(v==='again'){step=1;selId=null;booked=null}else return}
+  else if(el=g('data-t')){selT=+el.dataset.t;notice=''}
+  else if(el=g('data-go')){const v=el.dataset.go;if(v==='next'&&selT!==null)step=2;else if(v==='back')step=1;else if(v==='again'){step=1;selT=null;booked=null}else return}
   else if(e.target.id==='back')step=1;
   else return;
   render();
 });
+document.addEventListener('change',e=>{if(e.target.id==='svc'){svcIdx=+e.target.value;selT=null;notice='';recompute();render()}});
 document.addEventListener('submit',async e=>{
   if(e.target.id!=='form')return;e.preventDefault();
-  const n=$('nom').value.trim(),t=$('tel').value.trim(),a=slots.find(x=>x.id===selId),er=$('err');
-  if(!a){step=1;render();return}
+  const n=$('nom').value.trim(),t=$('tel').value.trim(),sv=svc(),er=$('err');
+  if(!sv||selT===null){step=1;render();return}
   if(n.length<2){er.textContent='Escribe tu nombre.';return}
   if(t.replace(/\D/g,'').length<8){er.textContent='Escribe un teléfono válido.';return}
   busy=true;$('send').disabled=true;er.textContent='';
+  const d=selDay,s0=selT,dur=Math.max(5,+sv.m),paso=Math.max(10,+H().paso||30);
   try{
-    const b=db.batch();
-    b.set(db.collection('reservas').doc(a.id),{nombre:n,telefono:t,creada:firebase.firestore.FieldValue.serverTimestamp()});
-    b.update(db.collection('horas').doc(a.id),{libre:false});
+    const b=db.batch(),rr=db.collection('reservas').doc();
+    b.set(rr,{nombre:n,telefono:t,creada:firebase.firestore.FieldValue.serverTimestamp(),d,t:fmt(s0),s:sv.n,m:dur});
+    for(let x=s0;x<s0+dur;x+=paso)b.set(db.collection('bloques').doc(d+'_'+hhmm(x)),{d,t:fmt(x),r:rr.id});
     await b.commit();
-    booked={...a,n};step=3;busy=false;selId=null;render();
+    booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n};step=3;busy=false;selT=null;render();
   }catch(x){
     busy=false;$('send').disabled=false;
     er.textContent=x.code==='permission-denied'?'Esa hora ya fue tomada por otra persona. Elige otra.':'No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
