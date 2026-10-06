@@ -420,7 +420,6 @@ function render(){
     edit.innerHTML=`<div class="lbl" style="margin-top:0">Sucursales y terapeutas</div>`
     +S.branches.map((b,i)=>`<div class="row"><input data-b="${i}" value="${esc(b)}"><button class="x" data-xb="${i}" aria-label="Quitar sucursal">✕</button></div>`).join('')
     +S.thers.map((b,i)=>`<div class="row"><input data-t="${i}" value="${esc(b)}"><button class="x" data-xt="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')
-    +`<div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
     +`<button class="btn" style="width:100%;margin:6px 0 8px" data-ginvite>＋ Nuevo terapeuta</button>${S.guests.map((g,i)=>`<div class="svb"><div class="svi"><b>${esc(g.n)}</b><span>${esc(g.e||'')}</span></div><button class="pill" data-gview="${i}">Ver agenda</button><button class="x" data-xg="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')}<div class="lbl">Servicios: nombre, minutos y valor</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
     +S.services.map((s,i)=>`<div class="svb"><div class="svi"><b>${esc(s.n)}</b><span>${esc(s.c||'Otros')}${s.g?' · '+esc(s.g):''}</span><span>${s.m} min · ${money(s.v)}</span></div><button class="pill" data-svcedit="${i}">Editar</button><button class="x" data-xs="${i}" aria-label="Eliminar servicio">✕</button></div>`).join('')
     +``
