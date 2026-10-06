@@ -96,7 +96,7 @@ const fmt=x=>p2(Math.floor(x/60))+':'+p2(x%60);
 const hhmm=x=>p2(Math.floor(x/60))+p2(x%60);
 const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
 const t0=ymd(new Date()),HORIZON=42;
-let tid='admin',oc2={},t2=0,ag=null,taken=new Set(),svcIdx=0,selDay=null,selT=null,week=mondayOf(t0),filt='all',step=1,busy=false,booked=null,notice='',avail={};
+let legacy={},tid='admin',oc2={},t2=0,ag=null,taken=new Set(),svcIdx=0,selDay=null,selT=null,week=mondayOf(t0),filt='all',step=1,busy=false,booked=null,notice='',avail={};
 const $=id=>document.getElementById(id);
 const TH=()=>{const l=(ag&&ag.terapeutas)||[];return l.length?l:[{id:'admin',n:'Daniela Velásquez',r:'Cosmetóloga y Masoterapeuta'}]};
 const curTh=()=>TH().find(t=>t.id===tid)||TH()[0];
@@ -128,6 +128,9 @@ function onData(){
   if(step===2&&was!==null&&selT===null){notice='Esa hora acaba de ser tomada. Elige otra.';step=1}
   if(step!==3)render();
 }
+const WA=()=>{let d=String((ag&&ag.wa)||legacy.wa||'').replace(/\D/g,'');if(d.length===9)d='56'+d;return d.length>=10?d:''};
+const DATOS=()=>(ag&&ag.datos)||legacy.datos||'';
+db.collection('publico').doc('config').get().then(d=>{if(d.exists){legacy=d.data()||{};if(step===3)render()}}).catch(()=>{});
 db.collection('publico').doc('agenda').onSnapshot(d=>{ag=d.exists?d.data():{};onData()},()=>{$('app').innerHTML='<p class="mut">No se pudo cargar la agenda. Intenta de nuevo más tarde.</p>'});
 db.collection('ocupados').onSnapshot(q=>{oc2={};q.docs.forEach(d=>{oc2[d.id]=d.data().ocupado||{}});onData()},()=>{});
 db.collection('bloques').onSnapshot(q=>{taken=new Set(q.docs.map(d=>d.id));onData()},()=>{});
@@ -157,7 +160,7 @@ function view1(app){
   const sv=svc();
   if(!sv){app.innerHTML='<div class="card" style="max-width:520px;margin:auto"><h3>Reservas no disponibles por ahora</h3></div>';return}
   const keys=Object.keys(avail);
-  if(!keys.length){app.innerHTML=`<div class="grid">${card()}<div class="card"><h3>No hay horas disponibles por ahora</h3><p class="mut">Prueba con otro servicio o vuelve más tarde.</p>${ag.wa?`<a class="cta" href="https://wa.me/${esc(ag.wa)}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>`:''}</div></div>`;return}
+  if(!keys.length){app.innerHTML=`<div class="grid">${card()}<div class="card"><h3>No hay horas disponibles por ahora</h3><p class="mut">Prueba con otro servicio o vuelve más tarde.</p>${WA()?`<a class="cta" href="https://wa.me/${WA()}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>`:''}</div></div>`;return}
   const wEnd=addD(week,6),lastD=addD(t0,HORIZON-1);let days='';
   for(let i=0;i<7;i++){const d=addD(week,i),h=!!avail[d];days+=`<button class="day ${h?'has':''} ${d===selDay?'on':''}" ${h?'':'disabled'} data-day="${d}" aria-pressed="${d===selDay}"><small>${DC[toD(d).getDay()]}</small><b>${toD(d).getDate()}</b></button>`}
   const w0=toD(week),w1=toD(wEnd);
@@ -185,7 +188,7 @@ function view3(app){
   const msg=encodeURIComponent(`Hola, soy ${a.n}. Reservé ${a.s} el ${fmtD(a.d)} a las ${fmt(a.t)}. Te envío el comprobante del abono.`);
   app.innerHTML=`<div class="ok"><h3 style="color:var(--grn)">Solicitud enviada</h3><p><b>${esc(a.s)}</b>${a.th?' con '+esc(a.th):''}<br>${cap(fmtD(a.d))} · ${fmt(a.t)} a ${fmt(a.t+a.m)}</p>
   <p>Tu hora queda <b>pendiente hasta que se pague el abono</b>${ab?` de <b>${money(ab)}</b> (se descuenta del valor del servicio)`:''}. Tienes <b>${ag.plazo||24} horas</b> para transferirlo; pasado ese plazo la hora puede liberarse.</p>
-  ${ag.datos?`<pre>${esc(ag.datos)}</pre>`:''}${ag.wa?`<a class="cta" href="https://wa.me/${esc(ag.wa)}?text=${msg}" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>`:''}
+  ${DATOS()?`<pre>${esc(DATOS())}</pre>`:''}${WA()?`<a class="cta" href="https://wa.me/${WA()}?text=${msg}" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>`:''}
   <button class="cta alt" data-go="again">Reservar otra hora</button></div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
