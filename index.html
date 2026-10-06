@@ -58,8 +58,9 @@ input,select,textarea{font:inherit;background:var(--bg);border:1px solid var(--l
 .appt.s-bloqueado{border-left-color:var(--mut)}
 .ctl{flex-wrap:wrap}.wab{text-decoration:none;font-size:13px;padding:7px 12px;color:var(--ink);white-space:nowrap}
 h3.wkh{font:700 clamp(20px,5vw,24px) 'Barlow Condensed';margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.goto{position:relative;font:500 13px Barlow,sans-serif;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:6px 10px;cursor:pointer;white-space:nowrap}
-.goto input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;margin:0}
+.gotow{position:relative;display:inline-block;flex:none}
+.goto{font:500 13px Barlow,sans-serif;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:7px 12px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+.pickhid{position:absolute;left:0;bottom:0;width:100%;height:100%;opacity:0;pointer-events:none;padding:0;margin:0;border:0}
 .wk{display:flex;align-items:center;gap:6px}
 .nav{flex:none;width:28px;height:48px;border:0;background:none;font-size:20px;cursor:pointer;color:var(--ink)}
 .dgrid{flex:1;display:grid;grid-template-columns:repeat(7,1fr);gap:5px;min-width:0}
@@ -261,7 +262,7 @@ function render(){
   if(first)fill();
   const L0=mine();
   const w1=new Date(wkS);w1.setDate(wkS.getDate()+6);
-  let h=`<h3 class="wkh"><span>Semana del ${wkS.getDate()}${wkS.getMonth()!==w1.getMonth()?' de '+MES[wkS.getMonth()]:''} al ${w1.getDate()} de ${MES[w1.getMonth()]}</span><span class="goto">📅 Ir a fecha<input type="date" id="pick" aria-label="Ir a fecha"></span></h3><div class="wk"><button class="nav" data-wk="-1" aria-label="Semana anterior">‹</button><div class="dgrid">`;
+  let h=`<h3 class="wkh"><span>Semana del ${wkS.getDate()}${wkS.getMonth()!==w1.getMonth()?' de '+MES[wkS.getMonth()]:''} al ${w1.getDate()} de ${MES[w1.getMonth()]}</span><span class="gotow"><button type="button" class="goto" data-goto>📅 Ir a fecha</button><input type="date" id="pick" class="pickhid" tabindex="-1" aria-hidden="true"></span></h3><div class="wk"><button class="nav" data-wk="-1" aria-label="Semana anterior">‹</button><div class="dgrid">`;
   for(let i=0;i<7;i++){const d=new Date(wkS);d.setDate(wkS.getDate()+i);const s=iso(d),n=L0.filter(a=>a.d===s).length,work=S.cfg.horario.dias.includes(d.getDay());
     h+=`<button class="dayb ${work?'has':''} ${s===sel?'on':''}" data-d="${s}" aria-pressed="${s===sel}"><small>${DS[d.getDay()]}</small><b>${d.getDate()}</b><i>${n?n+' hora'+(n==1?'':'s'):''}</i></button>`}
   h+=`</div><button class="nav" data-wk="1" aria-label="Semana siguiente">›</button></div>`;
@@ -279,6 +280,7 @@ document.addEventListener('click',e=>{
   else if(el=g('data-sb'))S.branch=+el.dataset.sb;
   else if(el=g('data-st'))S.ther=+el.dataset.st;
   else if(el=g('data-d')){sel=el.dataset.d;custom=false}
+  else if(el=g('data-goto')){const i=document.getElementById('pick');try{i.showPicker()}catch(_){i.focus();i.click()}return}
   else if(el=g('data-wk')){const k=7*+el.dataset.wk,d=new Date(sel+'T12:00');d.setDate(d.getDate()+k);sel=iso(d);wkS.setDate(wkS.getDate()+k)}
   else if(el=g('data-xa'))S.appts=S.appts.filter(a=>a.id!=el.dataset.xa);
   else if(el=g('data-xb')){if(S.branches.length>1){S.branches.splice(+el.dataset.xb,1);S.branch=0}}
