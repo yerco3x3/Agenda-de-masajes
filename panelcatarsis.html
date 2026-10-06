@@ -90,6 +90,7 @@ h3.wkh{font:700 clamp(20px,5vw,24px) 'Barlow Condensed';margin:0 0 10px;display:
 .dnav b{font:700 20px 'Barlow Condensed',sans-serif;text-align:center}
 .svb{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin:6px 0}
 .svi{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}.svi b{font-weight:600}.svi span{font-size:13px;color:var(--mut)}
+.guest #edBtn,.guest #pubInfo{display:none!important}
 .hide{display:none}
 #login{display:none}
 body.locked>*:not(#login){display:none!important}
@@ -155,6 +156,30 @@ body.locked #login{display:block}
   <button class="btn" style="width:100%;margin-top:6px" data-blkclose>Listo</button>
  </div>
 </div>
+<div id="gModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="gT">
+ <form class="mbox" id="gForm" novalidate>
+  <div class="mhead"><h3 id="gT">Invitar terapeuta</h3><button type="button" class="x" data-gclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
+  <ol class="mut" style="font-size:13px;padding-left:18px;margin:8px 0">
+   <li>En Firebase ve a <b>Authentication → Usuarios</b> y crea su usuario con correo y contraseña.</li>
+   <li>Copia su <b>UID</b> y pégalo aquí.</li>
+   <li>Pásale el link de tu panel y sus datos de ingreso.</li>
+  </ol>
+  <label class="f" for="gN">Nombre</label><input id="gN" maxlength="60" autocomplete="off" placeholder="Nombre de la terapeuta">
+  <label class="f" for="gE">Correo (para tu referencia)</label><input id="gE" type="email" maxlength="80" autocomplete="off">
+  <label class="f" for="gU">UID de Firebase</label><input id="gU" maxlength="40" autocomplete="off" placeholder="Pega el UID de su usuario">
+  <div class="err" id="gErr" role="alert"></div>
+  <button class="btn" style="width:100%" type="submit">Autorizar terapeuta</button>
+  <button class="pill" style="width:100%;margin-top:8px" type="button" data-gclose>Cancelar</button>
+ </form>
+</div>
+<div id="gvModal" class="modal nobox" hidden role="dialog" aria-modal="true" aria-labelledby="gvT">
+ <div class="mbox">
+  <div class="mhead"><h3 id="gvT">Agenda</h3><button type="button" class="x" data-gvclose aria-label="Cerrar" style="flex:0 0 40px;height:40px;color:var(--ink)">✕</button></div>
+  <div class="mut" style="font-size:13px;margin:4px 0 8px">Solo lectura. Ella maneja sus propias horas.</div>
+  <div id="gvB"></div>
+  <button class="btn" style="width:100%;margin-top:10px" data-gvclose>Cerrar</button>
+ </div>
+</div>
 <div id="cfModal" class="modal nobox" hidden role="alertdialog" aria-modal="true" aria-labelledby="cfT" aria-describedby="cfM">
  <div class="mbox" style="max-width:380px">
   <h3 id="cfT" style="font:700 22px 'Barlow Condensed',sans-serif;margin:0 0 8px">¿Eliminar?</h3>
@@ -181,7 +206,7 @@ const FIREBASE_CONFIG={
 /* Ejemplo: const FIREBASE_CONFIG={apiKey:"...",authDomain:"...",projectId:"...",storageBucket:"...",messagingSenderId:"...",appId:"..."}; */
 // Clave de reCAPTCHA v3 para App Check (ver pasos). Déjala vacía para no usarlo.
 const APPCHECK_KEY='';
-const KEY='masajes-v1',ROL='Cosmetóloga y Masoterapeuta';
+const KEY='masajes-v1';let ROL='Cosmetóloga y Masoterapeuta';
 const DEF=[{"n":"Masaje Relajante Cuerpo Completo","m":50,"v":26000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje Mixto Cuerpo Completo (relajación + descontracturante)","m":50,"v":28000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje Descontracturante Cuerpo Completo","m":50,"v":30000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Descontracturante + Ventosas Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje con Piedras Calientes Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje con Cannabis Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje para Embarazadas Cuerpo Completo","m":50,"v":30000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje para Fibromialgia Cuerpo Completo","m":50,"v":35000,"c":"Masoterapia","g":"Masajes cuerpo completo"},{"n":"Masaje Relajante de Espalda","m":30,"v":20000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Descontracturante de Espalda","m":30,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Cérvico-Craneal","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Cráneo-Facial","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Facial para Bruxismo","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje para Piernas Cansadas","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Podal","m":40,"v":25000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Masaje Abdominal / Colon","m":40,"v":27000,"c":"Masoterapia","g":"Masajes localizados"},{"n":"Drenaje Linfático Manual Cuerpo Completo","m":60,"v":40000,"c":"Masoterapia","g":"Drenaje linfático"},{"n":"Drenaje Linfático de Piernas","m":40,"v":30000,"c":"Masoterapia","g":"Drenaje linfático"},{"n":"Drenaje Linfático Rostro","m":40,"v":25000,"c":"Masoterapia","g":"Drenaje linfático"},{"n":"Limpieza Facial Profunda Purificante","m":60,"v":30000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Men – Limpieza Profunda Masculina","m":60,"v":30000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Piel Joven – Control de Impurezas","m":60,"v":30000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Limpieza Profunda + Fototerapia LED","m":60,"v":38000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Premium Reafirmante & Anti-Age","m":60,"v":45000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Facial Glow + Dermaplaning","m":60,"v":50000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Limpieza Profunda de Espalda","m":60,"v":38000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Dermaplaning Glow Express","m":30,"v":25000,"c":"Limpiezas faciales","g":"Limpiezas faciales"},{"n":"Extracción de Milium (1)","m":15,"v":5000,"c":"Limpiezas faciales","g":"Extracción de milium"},{"n":"Extracción de Milium (2 – 3)","m":15,"v":10000,"c":"Limpiezas faciales","g":"Extracción de milium"},{"n":"Extracción de Milium (4 – 5)","m":15,"v":15000,"c":"Limpiezas faciales","g":"Extracción de milium"}];
 const iso=d=>d.toISOString().slice(0,10);
 const today=new Date();today.setHours(12,0,0,0);
@@ -189,9 +214,10 @@ const mon=new Date(today);mon.setDate(today.getDate()-((today.getDay()+6)%7));
 const MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const DIA=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const DS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-let S={branches:['Catarsis Osorno'],thers:['Daniela Velásquez'],services:DEF,appts:[],branch:0,ther:0};
+let S={branches:['Catarsis Osorno'],thers:['Daniela Velásquez'],services:DEF,guests:[],appts:[],branch:0,ther:0};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 function migrate(){
+  S.guests=S.guests||[];
   S.branches=S.branches.map(b=>b==='Mi sucursal'?'Catarsis Osorno':b);
   S.thers=S.thers.map(t=>t==='Terapeuta 1'?'Daniela Velásquez':t);
   if(!S.services||!S.services.length||S.services.some(x=>!x.c))S.services=DEF.map(x=>({...x}));
@@ -202,12 +228,12 @@ function migrate(){
 }
 migrate();
 const monOf=s=>{const d=new Date(s+'T12:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return d};
-let wkS=new Date(mon),sel=iso(today),editing=false,custom=false,ref=null,skip=false,readOnly=false,gotMain=false,gotRes=false,reservas=[],lastPub={},lastCfg='',firstPub=true,unsubR=null,lastPend=new Set(),firstPend=true;
+let wkS=new Date(mon),sel=iso(today),editing=false,custom=false,ref=null,skip=false,readOnly=false,gotMain=false,gotRes=false,reservas=[],lastPub={},lastCfg='',firstPub=true,unsubR=null,lastPend=new Set(),firstPend=true,guestMode=false,lastAcc='';
 const uidTag=u=>` Tu UID es: <code style="user-select:all;background:var(--tint);padding:2px 6px;border-radius:6px;word-break:break-all">${u.uid}</code> Pégalo en las reglas de Firestore.`;
-const push0=()=>ref.set({branches:S.branches,thers:S.thers,services:S.services,cfg:S.cfg,appts:S.appts}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')';return false});
+const push0=()=>ref.set(guestMode?{n:S.thers[0],appts:S.appts}:{branches:S.branches,thers:S.thers,services:S.services,cfg:S.cfg,guests:S.guests,appts:S.appts}).catch(e=>{const u=firebase.auth().currentUser;sync.innerHTML=e.code==='permission-denied'&&u?'Sin permiso para guardar.'+uidTag(u):'No se pudo guardar en la nube ('+(e.code||'error')+')';return false});
 let pushP=Promise.resolve(),pubP=Promise.resolve();
 const push=()=>(pushP=push0());
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} if(ref&&!skip&&!readOnly)push();if(ref&&gotMain&&gotRes&&!readOnly)syncPublic()};
+const save=()=>{if(!guestMode){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}} if(ref&&!skip&&!readOnly)push();if(ref&&gotMain&&gotRes&&!readOnly)syncPublic()};
 const pubErr=e=>{pubInfo.textContent='No se pudo publicar el horario ('+(e.code||'error')+'). Revisa las reglas de Firestore.'};
 const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
 function processReservas(){
@@ -232,6 +258,8 @@ function syncPublic(){
   const j=JSON.stringify(doc);
   if(j!==lastCfg){lastCfg=j;pubP=db.collection('publico').doc('agenda').set(doc).then(()=>{pubInfo.textContent='Horario publicado para tus clientas ✓'}).catch(pubErr)}
   syncPend(db);
+  const uids=S.guests.map(g=>g.uid),ju=JSON.stringify(uids);
+  if(ju!==lastAcc){lastAcc=ju;db.collection('accesos').doc('lista').set({uids}).catch(pubErr)}
 }
 const nd=f=>{const d=String(f||'').replace(/\D/g,'');return d.length>9?d.slice(-9):d};
 function syncPend(db){
@@ -244,6 +272,25 @@ function syncPend(db){
 }
 const catList=()=>[...new Set(['Masoterapia','Limpiezas faciales',...S.services.map(x=>x.c).filter(Boolean)])];
 let editIdx=-1,pendDel=null;
+async function openGuestView(i){
+  const g=S.guests[i];if(!g)return;
+  gvT.textContent='Agenda de '+g.n;gvB.innerHTML='<p class="mut">Cargando…</p>';gvModal.hidden=false;
+  try{
+    const d=await firebase.firestore().collection('invitados').doc(g.uid).get(),t0=iso(today);
+    const L=((d.exists&&d.data().appts)||[]).filter(a=>a.d>=t0&&!a.bq).sort((a,b)=>(a.d+a.t).localeCompare(b.d+b.t));
+    let last='';
+    gvB.innerHTML=L.length?L.map(a=>{const h=a.d!==last?`<div class="lbl" style="margin:12px 0 4px">${fmtD(a.d)}</div>`:'';last=a.d;
+      return h+`<div class="appt s-${a.e}"><div class="t">${a.t}</div><div class="i"><b>${a.e==='bloqueado'?'Horario bloqueado':esc(a.c||'Sin nombre')}</b>${a.f&&a.e!=='bloqueado'?' · '+esc(a.f):''}<div class="mut">${esc(a.s)} · hasta ${end(a.t,a.m)} · ${money(a.v)}${a.e==='bloqueado'?'':' · '+(a.p==='pagado'?'Abono pagado':'Abono pendiente')}</div></div></div>`}).join(''):'<p class="mut">Sin horas agendadas a futuro.</p>';
+  }catch(e){gvB.innerHTML='<p class="mut">No se pudo cargar la agenda ('+(e.code||'error')+').</p>'}
+}
+gForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const n=gN.value.trim(),em=gE.value.trim(),uid=gU.value.trim();
+  if(n.length<2){gErr.textContent='Escribe el nombre de la terapeuta.';return}
+  if(!/^[A-Za-z0-9]{20,40}$/.test(uid)){gErr.textContent='Pega el UID completo de Firebase (letras y números, sin espacios).';return}
+  if(S.guests.some(g=>g.uid===uid)){gErr.textContent='Esa persona ya está autorizada.';return}
+  S.guests.push({uid,n,e:em});gModal.hidden=true;render();
+});
 function askDel(kind,key,title,msg){pendDel={kind,key};cfT.textContent=title;cfM.textContent=msg;cfModal.hidden=false}
 function openSvc(i=-1){editIdx=i;
   catsDL.innerHTML=catList().map(c=>`<option value="${esc(c)}">`).join('');
@@ -284,7 +331,7 @@ function blockAll(on){
   else S.appts=S.appts.filter(a=>!(a.bq&&a.d===sel&&a.k===key()));
 }
 function afterSync(){if(!gotMain||!gotRes)return;processReservas();syncPublic()}
-let unsub=null;
+let unsub=null,unsubA=null;
 const lock=on=>document.body.classList.toggle('locked',on);
 function initDB(){
   if(!FIREBASE_CONFIG||!window.firebase){sync.textContent='Guardado solo en este dispositivo';return}
@@ -297,26 +344,46 @@ function initDB(){
     try{await auth.signInWithEmailAndPassword(lEmail.value.trim(),lPass.value);lPass.value=''}
     catch(err){loginErr.textContent=MSG[err.code]||'No se pudo entrar. Revisa tus datos.'}});
   outBtn.addEventListener('click',async()=>{try{localStorage.removeItem(KEY)}catch(e){} await auth.signOut();location.reload()});
-  auth.onAuthStateChanged(u=>{
-    if(unsub){unsub();unsub=null}if(unsubR){unsubR();unsubR=null}
-    if(!u){ref=null;readOnly=false;document.body.classList.remove('ro');lock(true);outBtn.classList.add('hide');return}
+  auth.onAuthStateChanged(async u=>{
+    if(unsub){unsub();unsub=null}if(unsubR){unsubR();unsubR=null}if(unsubA){unsubA();unsubA=null}
+    if(!u){ref=null;readOnly=false;guestMode=false;document.body.classList.remove('ro','guest');lock(true);outBtn.classList.add('hide');return}
     lock(false);outBtn.classList.remove('hide');
-    ref=db.collection('masajes').doc('datos');
-    db.collection('masajes').doc('ping').set({t:Date.now()}).then(()=>{readOnly=false;document.body.classList.remove('ro')}).catch(e=>{if(e.code==='permission-denied'){readOnly=true;document.body.classList.add('ro');sync.textContent='Modo solo lectura ✓'}});
-    gotMain=false;gotRes=false;firstPub=true;lastPub={};lastCfg='';firstPend=true;lastPend=new Set();
-    unsubR=db.collection('reservas').onSnapshot(q=>{reservas=q.docs.map(d=>({id:d.id,...d.data()}));gotRes=true;afterSync()},()=>{});
-    unsub=ref.onSnapshot(s=>{
-      if(s.metadata.hasPendingWrites)return;
-      if(s.exists){const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.services=d.services||S.services;S.cfg=d.cfg||S.cfg;S.appts=d.appts||[];
-        migrate();S.branch=Math.min(S.branch,S.branches.length-1);S.ther=Math.min(S.ther,S.thers.length-1);skip=true;render();skip=false;}
-      else if(!readOnly)push();
-      gotMain=true;sync.textContent=readOnly?'Modo solo lectura ✓':'Sincronizado en la nube ✓';afterSync();
-    },err=>{sync.innerHTML=err.code==='permission-denied'?'Esta cuenta no tiene permiso para ver la agenda.'+uidTag(u):'Sin conexión con la base de datos ('+(err.code||'error')+')'});
+    let admin=true;
+    try{await db.collection('masajes').doc('ping').set({t:Date.now()})}catch(e){if(e.code==='permission-denied')admin=false}
+    if(admin){guestMode=false;document.body.classList.remove('guest');startAdmin(u,db)}else startGuest(u,db);
   });
+}
+function startAdmin(u,db){
+  ref=db.collection('masajes').doc('datos');
+  gotMain=false;gotRes=false;firstPub=true;lastPub={};lastCfg='';lastAcc='';firstPend=true;lastPend=new Set();
+  unsubR=db.collection('reservas').onSnapshot(q=>{reservas=q.docs.map(d=>({id:d.id,...d.data()}));gotRes=true;afterSync()},()=>{});
+  unsub=ref.onSnapshot(s=>{
+    if(s.metadata.hasPendingWrites)return;
+    if(s.exists){const d=s.data();S.branches=d.branches||S.branches;S.thers=d.thers||S.thers;S.services=d.services||S.services;S.cfg=d.cfg||S.cfg;S.guests=d.guests||[];S.appts=d.appts||[];
+      migrate();S.branch=Math.min(S.branch,S.branches.length-1);S.ther=Math.min(S.ther,S.thers.length-1);skip=true;render();skip=false;}
+    else push();
+    gotMain=true;sync.textContent='Sincronizado en la nube ✓';afterSync();
+  },err=>{sync.innerHTML=err.code==='permission-denied'?'Esta cuenta no tiene permiso para ver la agenda.'+uidTag(u):'Sin conexión con la base de datos ('+(err.code||'error')+')'});
+}
+function startGuest(u,db){
+  guestMode=true;ROL='Terapeuta invitada';document.body.classList.add('guest');
+  S.branches=['Catarsis Osorno'];S.thers=[u.displayName||u.email||'Terapeuta'];S.branch=0;S.ther=0;S.appts=[];
+  ref=db.collection('invitados').doc(u.uid);
+  unsubA=db.collection('publico').doc('agenda').onSnapshot(d=>{
+    if(!d.exists)return;const a=d.data();
+    S.services=(a.services||[]).map(x=>({...x}));
+    S.cfg=Object.assign({},S.cfg,{abono:a.abono,plazo:a.plazo,datos:a.datos,wa:a.wa,horario:a.horario||S.cfg.horario});
+    skip=true;render();skip=false;
+  },()=>{});
+  unsub=ref.onSnapshot(q=>{
+    if(q.metadata.hasPendingWrites)return;
+    if(q.exists)S.appts=q.data().appts||[];else push();
+    sync.textContent='Terapeuta invitada · sincronizado ✓';skip=true;render();skip=false;
+  },err=>{sync.textContent=err.code==='permission-denied'?'Tu cuenta aún no fue autorizada por la administradora.':'Sin conexión con la base de datos ('+(err.code||'error')+')'});
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const key=()=>S.branches[S.branch]+'|'+S.thers[S.ther];
-const mine=()=>S.appts.filter(a=>a.k===key());
+const mine=()=>S.appts.filter(a=>guestMode||a.k===key());
 const fmtD=s=>{const d=new Date(s+'T12:00');return `${DIA[d.getDay()]} ${d.getDate()} de ${MES[d.getMonth()]}`};
 const money=n=>'$'+Number(n||0).toLocaleString('es-CL');
 const end=(t,m)=>{const [h,n]=t.split(':').map(Number);const x=h*60+n+m;return String(Math.floor(x/60)%24).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
@@ -342,7 +409,7 @@ function render(){
     +S.branches.map((b,i)=>`<div class="row"><input data-b="${i}" value="${esc(b)}"><button class="x" data-xb="${i}" aria-label="Quitar sucursal">✕</button></div>`).join('')
     +S.thers.map((b,i)=>`<div class="row"><input data-t="${i}" value="${esc(b)}"><button class="x" data-xt="${i}" aria-label="Quitar terapeuta">✕</button></div>`).join('')
     +`<div class="row"><input id="nt" placeholder="Nuevo terapeuta"><button class="btn fit" id="at">Agregar</button></div><div class="row"><input id="nb" placeholder="Nueva sucursal"><button class="btn fit" id="ab">Agregar</button></div>`
-    +`<div class="lbl">Servicios: nombre, minutos y valor</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
+    +`<div class="lbl">Terapeutas invitadas (ven y manejan solo sus horas)</div><button class="btn" style="width:100%;margin-bottom:8px" data-ginvite>＋ Invitar terapeuta</button>${S.guests.map((g,i)=>`<div class="svb"><div class="svi"><b>${esc(g.n)}</b><span>${esc(g.e||'')}</span></div><button class="pill" data-gview="${i}">Ver agenda</button><button class="x" data-xg="${i}" aria-label="Quitar terapeuta invitada">✕</button></div>`).join('')}<div class="lbl">Servicios: nombre, minutos y valor</div><button class="btn" style="width:100%;margin-bottom:8px" data-svcopen>＋ Nuevo servicio</button>`
     +S.services.map((s,i)=>`<div class="svb"><div class="svi"><b>${esc(s.n)}</b><span>${esc(s.c||'Otros')}${s.g?' · '+esc(s.g):''}</span><span>${s.m} min · ${money(s.v)}</span></div><button class="pill" data-svcedit="${i}">Editar</button><button class="x" data-xs="${i}" aria-label="Eliminar servicio">✕</button></div>`).join('')
     +``
     +`<div class="lbl">Reservas online</div><div class="mut" style="font-size:13px;margin-bottom:6px">Link para tus clientas: <b style="user-select:all;word-break:break-all">${esc(new URL('./',location.href).href)}</b></div>
@@ -400,12 +467,17 @@ document.addEventListener('click',e=>{
   else if(el=g('data-goto')){const i=document.getElementById('pick');try{i.showPicker()}catch(_){i.focus();i.click()}return}
   else if(el=g('data-wk')){const k=7*+el.dataset.wk,d=new Date(sel+'T12:00');d.setDate(d.getDate()+k);sel=iso(d);wkS.setDate(wkS.getDate()+k)}
   else if(el=g('data-xa')){const a=S.appts.find(x=>x.id==el.dataset.xa);if(a)askDel('appt',a.id,'¿Eliminar esta hora?',(a.e==='bloqueado'?'Horario bloqueado':(a.c||'Sin nombre'))+' · '+fmtD(a.d)+' a las '+a.t+' ('+a.s+'). Esta acción no se puede deshacer.');return}
-  else if(el=g('data-xb')){if(S.branches.length>1){S.branches.splice(+el.dataset.xb,1);S.branch=0}}
-  else if(el=g('data-xt')){if(S.thers.length>1){S.thers.splice(+el.dataset.xt,1);S.ther=0}}
+  else if(el=g('data-xb')){const b=S.branches[+el.dataset.xb];if(b&&S.branches.length>1)askDel('branch',+el.dataset.xb,'¿Eliminar esta sucursal?','"'+b+'". Las horas agendadas en ella dejarán de mostrarse en la agenda.');return}
+  else if(el=g('data-xt')){const t=S.thers[+el.dataset.xt];if(t&&S.thers.length>1)askDel('ther',+el.dataset.xt,'¿Eliminar a esta terapeuta?','"'+t+'". Las horas agendadas con ella dejarán de mostrarse en la agenda.');return}
+  else if(el=g('data-xg')){const q=S.guests[+el.dataset.xg];if(q)askDel('guest',+el.dataset.xg,'¿Quitar a esta terapeuta invitada?','"'+q.n+'" perderá el acceso a la agenda. Sus horas quedan guardadas.');return}
+  else if(el=g('data-ginvite')){gN.value='';gE.value='';gU.value='';gErr.textContent='';gModal.hidden=false;gN.focus();return}
+  else if(el=g('data-gclose')){gModal.hidden=true;return}
+  else if(el=g('data-gvclose')){gvModal.hidden=true;return}
+  else if(el=g('data-gview')){openGuestView(+el.dataset.gview);return}
   else if(el=g('data-xs')){const sv=S.services[+el.dataset.xs];if(sv&&S.services.length>1)askDel('svc',+el.dataset.xs,'¿Eliminar este servicio?','"'+sv.n+'". Las horas ya agendadas no se modifican, pero dejará de ofrecerse a tus clientas.');return}
   else if(el=g('data-cfno')){pendDel=null;cfModal.hidden=true;return}
   else if(e.target.id==='cfModal'){pendDel=null;cfModal.hidden=true;return}
-  else if(el=g('data-cfyes')){const q=pendDel;pendDel=null;cfModal.hidden=true;if(q){if(q.kind==='appt')S.appts=S.appts.filter(a=>a.id!=q.key);else if(q.kind==='svc'){S.services.splice(+q.key,1);svc.innerHTML=''}}}
+  else if(el=g('data-cfyes')){const q=pendDel;pendDel=null;cfModal.hidden=true;if(q){if(q.kind==='appt')S.appts=S.appts.filter(a=>a.id!=q.key);else if(q.kind==='svc'){S.services.splice(+q.key,1);svc.innerHTML=''}else if(q.kind==='branch'){S.branches.splice(+q.key,1);S.branch=0}else if(q.kind==='ther'){S.thers.splice(+q.key,1);S.ther=0}else if(q.kind==='guest'){S.guests.splice(+q.key,1)}}}
   else if(el=g('data-svcedit')){openSvc(+el.dataset.svcedit);return}
   else if(e.target.id==='at'){const v=nt.value.trim();if(v)S.thers.push(v)}
   else if(e.target.id==='ab'){const v=nb.value.trim();if(v)S.branches.push(v)}
@@ -418,7 +490,7 @@ document.addEventListener('click',e=>{
   render();
 });
 svcForm.addEventListener('submit',saveSvc);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){blkModal.hidden=true;svcModal.hidden=true;cfModal.hidden=true;pendDel=null}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){blkModal.hidden=true;svcModal.hidden=true;cfModal.hidden=true;pendDel=null;gModal.hidden=true;gvModal.hidden=true}});
 document.addEventListener('change',e=>{
   const t=e.target,d=t.dataset;
   if(t.id==='pick'&&t.value){sel=t.value;custom=true;wkS=monOf(sel)}
