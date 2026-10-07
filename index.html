@@ -161,7 +161,7 @@ async function sendMail(tpl,params){
 }
 function sendMails(a,tel,mail){
   const ab=abonoDe(a.v);
-  const p={cliente:a.n,telefono:tel,email_cliente:mail,to_email:mail,servicio:a.s,terapeuta:a.th||'',fecha:cap(fmtD(a.d)),hora:fmt(a.t)+' a '+fmt(a.t+a.m),duracion:a.m+' minutos',valor:money(a.v),abono:money(ab),saldo:money(Math.max(0,a.v-ab)),plazo:plz(ag&&ag.plazoMin),datos_transferencia:DATOS(),whatsapp:WA()?'https://wa.me/'+WA():'',direccion:'Cochrane 450, Osorno'};
+  const p={cliente:a.n,telefono:tel,email_cliente:mail,to_email:mail,servicio:a.s,terapeuta:a.th||'',fecha:cap(fmtD(a.d)),hora:fmt(a.t)+' a '+fmt(a.t+a.m),duracion:a.m+' minutos',valor:money(a.v),abono:money(ab),saldo:money(Math.max(0,a.v-ab)),plazo:plz(ag&&ag.plazoMin),datos_transferencia:DATOS(),whatsapp:WA()?'https://wa.me/'+WA():'',direccion:'Cochrane 450, Osorno',mapa:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Cochrane 450, Osorno')};
   if(mail)sendMail(EMAILJS.templateCliente,p);
   sendMail(EMAILJS.templateAdmin,p);
 }
