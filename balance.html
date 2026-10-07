@@ -9,7 +9,8 @@
 <style>
 :root{--bg:#ede1cb;--card:#f8f2e6;--ink:#1f1b16;--teal:#6b5a45;--tint:#e3d4b8;--mut:#574d41;--line:#d6c7aa;--red:#b8392b;--amb:#8a5200;--grn:#256b41;--btn:#1f1b16;--btnink:#f8f2e6;--onacc:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1a16;--card:#282420;--ink:#f1e7d3;--teal:#d2bb94;--tint:#3a3328;--mut:#c4b9a6;--line:#443c30;--amb:#e0a84a;--grn:#5cc08a;--btn:#ede1cb;--btnink:#1f1b16;--onacc:#1d1a16}}
-:root{color-scheme:light dark}
+:root{color-scheme:light dark;--red:#9c2a1e}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--red:#ff8f80}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Barlow,system-ui,sans-serif;padding:20px 16px 48px;max-width:760px;margin:auto;font-size:15px}
 h1,h2,h3,.cond{font-family:'Barlow Condensed',sans-serif;font-weight:700;margin:0}
@@ -50,6 +51,18 @@ body.denied>*:not(#gate){display:none!important}body.denied #gate{display:block}
 #toastBox{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--btn);color:var(--btnink);padding:11px 18px;border-radius:14px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
 #toastBox.on{opacity:1}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 14px;width:100%;font-size:15px;min-height:46px}
+option{background:var(--card);color:var(--ink)}
+.dl{display:block;font-size:12.5px;margin-top:2px;color:var(--mut)}
+.dl.pos{color:var(--grn)}.dl.neg{color:var(--red)}
+.bar{height:9px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--teal);border-radius:6px}
+.bar.g i{background:var(--grn)}
+.big{font:700 30px 'Barlow Condensed',sans-serif}
+.tag{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:8px;padding:1px 6px;color:var(--mut);margin-left:6px}
+.chk{display:flex;align-items:center;gap:8px;margin:10px 0 2px;font-size:14px}.chk input{width:auto;min-height:0}
+.sep{border:0;border-top:1px solid var(--line);margin:18px 0}
+a.lnk{color:var(--ink)}
 </style></head><body class="locked">
 <form id="login" class="box"><h1>Balance Catarsis</h1><p class="mut" style="margin:8px 0 14px">Ingresa para ver tus finanzas</p>
 <input id="lEmail" type="email" placeholder="Correo" autocomplete="username" required aria-label="Correo">
@@ -59,16 +72,30 @@ body.denied>*:not(#gate){display:none!important}body.denied #gate{display:block}
 <div class="top"><div><h1>Balance</h1><div class="sub">Catarsis Estética y Bienestar</div></div><a class="back" href="panelcatarsis.html">‹ Agenda</a></div>
 <div class="dnav"><button class="nav" data-m="-1" aria-label="Mes anterior">‹</button><b id="mesT"></b><button class="nav" data-m="1" aria-label="Mes siguiente">›</button></div>
 <div id="body"><div class="mut" style="margin-top:20px">Cargando…</div></div>
-<div class="box"><div class="fh">Agregar gasto</div>
+<div class="box"><h2 style="font-size:24px">Registrar</h2>
+<div class="fh" style="margin-top:12px">Gasto</div>
 <div class="row"><div><label class="f" for="gF">Fecha</label><input type="date" id="gF"></div><div><label class="f" for="gM">Monto ($)</label><input type="number" id="gM" min="0" step="500" inputmode="numeric"></div></div>
-<label class="f" for="gC">Detalle</label><input id="gC" maxlength="80" placeholder="Ej. Aceites, arriendo cabina, toallas" autocomplete="off">
+<label class="f" for="gK">Categoría</label><select id="gK"><option>Insumos</option><option>Arriendo</option><option>Publicidad</option><option>Servicios básicos</option><option>Sueldos</option><option>Otros</option></select>
+<label class="f" for="gC" style="margin-top:10px">Detalle</label><input id="gC" maxlength="80" placeholder="Ej. Aceites, arriendo cabina, toallas" autocomplete="off">
+<label class="chk"><input type="checkbox" id="gFijo"> Se repite todos los meses (gasto fijo, ej. arriendo)</label>
 <div class="err" id="gErr" role="alert"></div>
-<button class="btn" style="width:100%" id="addG">Agregar gasto</button></div>
+<button class="btn" style="width:100%" id="addG">Agregar gasto</button>
+<hr class="sep">
+<div class="fh">Giftcard vendida</div>
+<div class="row"><div><label class="f" for="hF">Fecha</label><input type="date" id="hF"></div><div><label class="f" for="hM">Monto ($)</label><input type="number" id="hM" min="0" step="500" inputmode="numeric"></div></div>
+<label class="f" for="hC">Detalle (opcional)</label><input id="hC" maxlength="80" placeholder="Ej. Para María, regalo de Pedro" autocomplete="off">
+<div class="err" id="hErr" role="alert"></div>
+<button class="btn" style="width:100%" id="addH">Registrar giftcard vendida</button>
+<hr class="sep">
+<div class="fh">Meta mensual</div>
+<label class="f" for="metaI">Monto que quieres cobrar cada mes ($)</label><input type="number" id="metaI" min="0" step="10000" inputmode="numeric" placeholder="Ej. 1500000">
+<div class="err" id="metaErr" role="alert"></div>
+<button class="btn" style="width:100%" id="saveMeta">Guardar meta</button></div>
 <div class="mut" id="sync" style="margin-top:20px;font-size:14px"></div>
 <button class="pill" id="outBtn" style="margin-top:8px" hidden>Cerrar sesión</button>
 <div id="confModal" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="confTitle"><div class="mbox">
 <h3 id="confTitle" style="font-size:22px;margin:0 0 6px">¿Eliminar?</h3><p id="confMsg" class="mut" style="margin:0 0 16px"></p>
-<div class="row"><button class="pill" id="confNo">Cancelar</button><button class="btn" id="confYes" style="background:var(--red);color:#fff">Sí, eliminar</button></div></div></div>
+<div class="row"><button class="pill" id="confNo">Cancelar</button><button class="btn" id="confYes" style="background:#b8392b;color:#fff">Sí, continuar</button></div></div></div>
 <div id="toastBox" role="status" aria-live="polite"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -86,11 +113,16 @@ const MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','se
 const DIA=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const money=n=>'$'+Number(n||0).toLocaleString('es-CL');
+const money=n=>{n=Number(n||0);return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString('es-CL')};
 const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const fmtD=s=>{const d=new Date(s+'T12:00');return DIA[d.getDay()]+' '+d.getDate()+' de '+MES[d.getMonth()]};
+const fmtS=s=>{const [y,m,d]=s.split('-');return d+'/'+m+'/'+y};
+const mName=m=>{const [y,n]=m.split('-').map(Number);return MES[n-1]+' '+y};
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+const shiftM=(m,k)=>{const [y,n]=m.split('-').map(Number),d=new Date(y,n-1+k,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
 const today=new Date();today.setHours(12,0,0,0);
-let month=ymd(today).slice(0,7),D={appts:[],cfg:{},services:[],gastos:[]},F={gastos:{},saldos:{}},gotD=false,gotF=false,db=null,confFn=null,toastT=null;
+let month=ymd(today).slice(0,7),D={appts:[],cfg:{},services:[],gastos:[]},F={gastos:{},saldos:{},fijos:{},gifts:{},meta:0},gotD=false,gotF=false,db=null,confFn=null,toastT=null;
+const FIN=()=>db.collection('masajes').doc('finanzas');
 function toast(m){$('toastBox').textContent=m;$('toastBox').classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>$('toastBox').classList.remove('on'),2400)}
 function ask(t,m,fn){$('confTitle').textContent=t;$('confMsg').textContent=m;confFn=fn;$('confModal').hidden=false}
 const real=a=>a.e!=='bloqueado'&&a.e!=='disponible'&&!a.bq;
@@ -99,45 +131,102 @@ const saldoOk=a=>!!(a.sp||F.saldos[a.id]);
 const cobrado=a=>a.gc||!real(a)||a.p!=='pagado'?0:(saldoOk(a)?(+a.v||0):abOf(a));
 const porCobrar=a=>a.gc||!real(a)||a.p!=='pagado'||saldoOk(a)?0:Math.max(0,(+a.v||0)-abOf(a));
 const sum=(L,f)=>L.reduce((t,x)=>t+f(x),0);
-const allGastos=()=>{const m=new Map();(D.gastos||[]).forEach(g=>m.set(String(g.id),g));Object.entries(F.gastos).forEach(([k,g])=>m.set(k,{...g,id:k}));return [...m.values()]};
+const gifts=()=>Object.entries(F.gifts).map(([k,g])=>({...g,id:k}));
+const fijosOn=m=>Object.entries(F.fijos).filter(([k,f])=>f.desde<=m&&(!f.hasta||f.hasta>=m)).map(([k,f])=>({...f,id:k}));
+const gastosDe=m=>{
+  const mp=new Map();(D.gastos||[]).forEach(g=>mp.set(String(g.id),g));Object.entries(F.gastos).forEach(([k,g])=>mp.set(k,{...g,id:k}));
+  const one=[...mp.values()].filter(g=>g.d.slice(0,7)===m);
+  const fx=fijosOn(m).map(f=>({id:'fx'+f.id,d:m+'-'+String(Math.min(28,Math.max(1,+f.dia||1))).padStart(2,'0'),m:f.m,c:f.c,k:f.k,fijo:true}));
+  return one.concat(fx)};
+function resumen(m){
+  const A=(D.appts||[]).filter(real).filter(a=>a.d.slice(0,7)===m);
+  const svc=sum(A,cobrado),gf=sum(gifts().filter(g=>g.d.slice(0,7)===m),g=>+g.m||0),gas=sum(gastosDe(m),g=>+g.m||0);
+  return{A,svc,gf,ing:svc+gf,gas,net:svc+gf-gas};
+}
+function delta(cur,prev,label){
+  if(!prev)return `<span class="dl">${cur?'Sin datos de '+label:''}</span>`;
+  const p=Math.round((cur-prev)/Math.abs(prev)*100);
+  if(p===0)return `<span class="dl">= igual que ${label}</span>`;
+  return `<span class="dl ${p>0?'pos':'neg'}">${p>0?'▲':'▼'} ${Math.abs(p)}% vs. ${label}</span>`}
 function draw(){
   if(!gotD||!gotF)return;
-  const [Y,M]=month.split('-').map(Number);$('mesT').textContent=MES[M-1][0].toUpperCase()+MES[M-1].slice(1)+' '+Y;
-  const A=(D.appts||[]).filter(real),inM=A.filter(a=>a.d.slice(0,7)===month),G=allGastos().filter(g=>g.d.slice(0,7)===month);
+  $('mesT').textContent=cap(mName(month));
+  const A=(D.appts||[]).filter(real),R=resumen(month),P=resumen(shiftM(month,-1)),G=gastosDe(month),pl=MES[+shiftM(month,-1).split('-')[1]-1];
   const mon=new Date(today);mon.setDate(today.getDate()-((today.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-  const t0=ymd(today),w0=ymd(mon),w1=ymd(sun);
-  const hoy=sum(A.filter(a=>a.d===t0),cobrado),sem=sum(A.filter(a=>a.d>=w0&&a.d<=w1),cobrado);
-  const mes=sum(inM,cobrado),xc=sum(inM,porCobrar),gas=sum(G,g=>+g.m||0),net=mes-gas;
-  const abPend=sum(inM.filter(a=>!a.gc&&a.p!=='pagado'),abOf),gcs=inM.filter(a=>a.gc);
-  const porCat={};inM.forEach(a=>{const sv=(D.services||[]).find(x=>x.n===a.s),c=a.gc?'Giftcards (canje)':(sv&&sv.c)||'Otros';(porCat[c]=porCat[c]||{n:0,t:0});porCat[c].n++;porCat[c].t+=cobrado(a)});
+  const t0=ymd(today),w0=ymd(mon),w1=ymd(sun),GF=gifts();
+  const hoy=sum(A.filter(a=>a.d===t0),cobrado)+sum(GF.filter(g=>g.d===t0),g=>+g.m||0);
+  const sem=sum(A.filter(a=>a.d>=w0&&a.d<=w1),cobrado)+sum(GF.filter(g=>g.d>=w0&&g.d<=w1),g=>+g.m||0);
+  const xc=sum(R.A,porCobrar),abPend=sum(R.A.filter(a=>!a.gc&&a.p!=='pagado'),abOf),gcs=R.A.filter(a=>a.gc);
+  const card=(l,v,c='',extra='')=>`<div class="fc ${c}"><small>${l}</small><b>${money(v)}</b>${extra}</div>`;
+  // ingresos por categoría
+  const porCat={};R.A.forEach(a=>{const sv=(D.services||[]).find(x=>x.n===a.s),c=a.gc?'Giftcards (canje)':(sv&&sv.c)||'Otros';(porCat[c]=porCat[c]||{n:0,t:0});porCat[c].n++;porCat[c].t+=cobrado(a)});
+  // servicios más vendidos
+  const sv={};R.A.forEach(a=>{const k=a.s||'Sin servicio';(sv[k]=sv[k]||{n:0,t:0});sv[k].n++;sv[k].t+=cobrado(a)});
+  const top=Object.entries(sv).sort((x,y)=>y[1].n-x[1].n||y[1].t-x[1].t).slice(0,5),maxN=top.length?top[0][1].n:1;
+  // gastos por categoría
+  const gk={};G.forEach(g=>{const k=g.k||'Otros';gk[k]=(gk[k]||0)+(+g.m||0)});const gkE=Object.entries(gk).sort((x,y)=>y[1]-x[1]);
+  // saldos
   const deb=A.filter(a=>porCobrar(a)>0&&a.d<=t0).sort((x,y)=>x.d.localeCompare(y.d));
-  const card=(l,v,c='')=>`<div class="fc ${c}"><small>${l}</small><b>${money(v)}</b></div>`;
+  // giftcards
+  const gMes=GF.filter(g=>g.d.slice(0,7)===month).sort((x,y)=>y.d.localeCompare(x.d));
+  const gPend=Math.max(0,sum(GF,g=>+g.m||0)-sum(A.filter(a=>a.gc),a=>+a.v||0));
+  // clientas
+  const cl={};A.filter(a=>a.p==='pagado'||a.e==='confirmada').forEach(a=>{
+    const ph=String(a.f||'').replace(/\D/g,'').slice(-9),k=ph||String(a.c||'').trim().toLowerCase();if(!k)return;
+    const o=cl[k]=cl[k]||{n:0,t:0,last:'',nm:'',ph:''};o.n++;o.t+=cobrado(a);if(a.d>=o.last){o.last=a.d;o.nm=a.c||o.nm;o.ph=a.f||o.ph}if(!o.nm)o.nm=a.c||''});
+  const cls=Object.values(cl).sort((x,y)=>y.n-x.n||y.t-x.t).slice(0,8);
+  const meta=+F.meta||0,pc=meta?Math.min(100,Math.round(R.ing/meta*100)):0;
   $('body').innerHTML=`<div class="fgrid">${card('Cobrado hoy',hoy)}${card('Cobrado esta semana',sem)}</div>
   <div class="box"><div class="fh">Resumen del mes</div>
-  <div class="fgrid f4">${card('Cobrado',mes)}${card('Gastos',gas)}${card('Ganancia neta',net,net>=0?'pos':'neg')}${card('Saldos por cobrar',xc)}</div>
-  <div class="mut" style="font-size:13px">Abonos aún pendientes de transferir este mes: ${money(abPend)}. Las giftcards no suman como ingreso del día (ya se pagaron al comprarlas)${gcs.length?': '+gcs.length+' canjeada'+(gcs.length==1?'':'s')+' por '+money(sum(gcs,a=>+a.v||0)):''}.</div></div>
-  <div class="box"><div class="fh">Por categoría</div>
+  <div class="fgrid f4">${card('Cobrado',R.ing,'',delta(R.ing,P.ing,pl))}${card('Gastos',R.gas)}${card('Ganancia neta',R.net,R.net>=0?'pos':'neg',delta(R.net,P.net,pl))}${card('Saldos por cobrar',xc)}</div>
+  <div class="mut" style="font-size:13px">Servicios: ${money(R.svc)} · Giftcards vendidas: ${money(R.gf)}. Abonos aún pendientes de transferir: ${money(abPend)}. Las giftcards canjeadas no suman al cobrar la cita (ya se pagaron al comprarlas)${gcs.length?': '+gcs.length+' este mes por '+money(sum(gcs,a=>+a.v||0)):''}.</div></div>
+  <div class="box"><div class="fh">Meta del mes</div>
+  ${meta?`<div class="big">${pc}%</div><div class="mut" style="font-size:14px">${money(R.ing)} de ${money(meta)} · ${R.ing>=meta?'¡Meta cumplida! 🎉':'faltan '+money(meta-R.ing)}</div><div class="bar g" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pc}" aria-label="Avance de la meta"><i style="width:${pc}%"></i></div>`:'<div class="mut">Aún no defines una meta. Puedes hacerlo en «Registrar» más abajo.</div>'}</div>
+  <div class="box"><div class="fh">Servicios más vendidos</div>
+  ${top.length?top.map(([n,o],i)=>`<div style="margin:9px 0"><div class="frow" style="border:0;padding:0"><span>${i+1}. ${esc(n)}</span><b>${o.n} ${o.n==1?'vez':'veces'}</b></div><div class="mut" style="font-size:13px">Cobrado: ${money(o.t)}</div><div class="bar" aria-hidden="true"><i style="width:${Math.round(o.n/maxN*100)}%"></i></div></div>`).join(''):'<div class="mut">Sin citas este mes.</div>'}</div>
+  <div class="box"><div class="fh">Ingresos por categoría</div>
   ${Object.keys(porCat).length?Object.entries(porCat).map(([c,o])=>`<div class="frow"><span>${esc(c)}<div class="mut">${o.n} cita${o.n==1?'':'s'}</div></span><b>${money(o.t)}</b></div>`).join(''):'<div class="mut">Sin citas este mes.</div>'}</div>
   <div class="box"><div class="fh">Saldos por cobrar</div><div class="mut" style="font-size:13px;margin-bottom:4px">Citas de hoy o ya realizadas con abono pagado y saldo pendiente. Para registrarlas como pagadas, usa el botón «Pagado» en la agenda.</div>
   ${deb.length?deb.map(a=>`<div class="frow"><span><b>${esc(a.c||'Sin nombre')}</b><div class="mut">${fmtD(a.d)} · ${esc(a.s)} · debe ${money(porCobrar(a))}</div></span></div>`).join(''):'<div class="mut">No hay saldos pendientes.</div>'}</div>
+  <div class="box"><div class="fh">Gastos por categoría</div>
+  ${gkE.length?gkE.map(([k,v])=>`<div style="margin:9px 0"><div class="frow" style="border:0;padding:0"><span>${esc(k)}</span><b>${money(v)} <span class="mut" style="font-weight:400;font-size:13px">· ${Math.round(v/R.gas*100)}%</span></b></div><div class="bar" aria-hidden="true"><i style="width:${Math.round(v/R.gas*100)}%"></i></div></div>`).join(''):'<div class="mut">Sin gastos este mes.</div>'}</div>
   <div class="box"><div class="fh">Gastos del mes</div>
-  ${G.length?G.slice().sort((x,y)=>y.d.localeCompare(x.d)).map(g=>`<div class="frow"><span>${esc(g.c||'Gasto')}<div class="mut">${fmtD(g.d)}</div></span><span style="display:flex;gap:8px;align-items:center"><b>${money(g.m)}</b><button class="x" data-xg="${esc(g.id)}" aria-label="Eliminar gasto">✕</button></span></div>`).join(''):'<div class="mut">Sin gastos registrados.</div>'}</div>`;
+  ${G.length?G.slice().sort((x,y)=>y.d.localeCompare(x.d)).map(g=>`<div class="frow"><span>${esc(g.c||'Gasto')}${g.fijo?'<span class="tag">Fijo</span>':''}<div class="mut">${esc(g.k||'Otros')} · ${fmtD(g.d)}</div></span><span style="display:flex;gap:8px;align-items:center"><b>${money(g.m)}</b>${g.fijo?'':`<button class="x" data-xg="${esc(g.id)}" aria-label="Eliminar gasto">✕</button>`}</span></div>`).join(''):'<div class="mut">Sin gastos registrados.</div>'}</div>
+  <div class="box"><div class="fh">Gastos fijos mensuales</div><div class="mut" style="font-size:13px;margin-bottom:4px">Se cuentan solos cada mes. Quitar uno solo afecta de este mes en adelante.</div>
+  ${fijosOn(month).length?fijosOn(month).map(f=>`<div class="frow"><span>${esc(f.c||'Gasto fijo')}<div class="mut">${esc(f.k||'Otros')} · desde ${mName(f.desde)}</div></span><span style="display:flex;gap:8px;align-items:center"><b>${money(f.m)}</b><button class="pill" data-xf="${esc(f.id)}">Quitar</button></span></div>`).join(''):'<div class="mut">No hay gastos fijos este mes.</div>'}</div>
+  <div class="box"><div class="fh">Giftcards</div>
+  <div class="fgrid">${card('Vendidas este mes',R.gf)}${card('Saldo por canjear',gPend)}</div>
+  <div class="mut" style="font-size:13px">Saldo por canjear = total vendido menos lo agendado con giftcard. Si vendiste giftcards antes de empezar a registrarlas aquí, este saldo puede verse menor al real.</div>
+  ${gMes.map(g=>`<div class="frow"><span>${esc(g.c||'Giftcard')}<div class="mut">${fmtD(g.d)}</div></span><span style="display:flex;gap:8px;align-items:center"><b>${money(g.m)}</b><button class="x" data-xh="${esc(g.id)}" aria-label="Eliminar giftcard">✕</button></span></div>`).join('')}</div>
+  <div class="box"><div class="fh">Clientas frecuentes</div><div class="mut" style="font-size:13px;margin-bottom:4px">Con citas confirmadas o con abono pagado, de todos los meses.</div>
+  ${cls.length?cls.map((o,i)=>`<div class="frow"><span>${i+1}. <b>${esc(o.nm||'Sin nombre')}</b><div class="mut">${o.n} visita${o.n==1?'':'s'} · última: ${fmtS(o.last)}${o.ph?' · <a class="lnk" href="https://wa.me/'+(String(o.ph).replace(/\D/g,'').length===9?'56':'')+String(o.ph).replace(/\D/g,'')+'" target="_blank" rel="noopener">WhatsApp</a>':''}</div></span><b>${money(o.t)}</b></div>`).join(''):'<div class="mut">Aún no hay visitas registradas.</div>'}</div>`;
 }
+const werr=e=>{toast(e.code==='permission-denied'?'Sin permiso para guardar. Revisa las reglas de Firestore.':'No se pudo guardar ('+(e.code||'error')+')')};
+const del=f=>FIN().update({[f]:firebase.firestore.FieldValue.delete()}).catch(werr);
 document.addEventListener('click',e=>{
   const g=k=>e.target.closest('['+k+']');let el;
-  if(el=g('data-m')){const [y,m]=month.split('-').map(Number),d=new Date(y,m-1+ +el.dataset.m,1);month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');draw()}
+  if(el=g('data-m')){month=shiftM(month,+el.dataset.m);draw()}
   else if(e.target.id==='addG'){const m=+$('gM').value,d=$('gF').value;if(!d||!(m>0)){$('gErr').textContent='Ingresa fecha y un monto mayor a 0.';return}$('gErr').textContent='';
-    const id='g'+Date.now();db.collection('masajes').doc('finanzas').set({gastos:{[id]:{d,m,c:$('gC').value.trim()}}},{merge:true}).then(()=>{$('gC').value='';$('gM').value='';toast('Gasto agregado ✓')}).catch(werr)}
-  else if(el=g('data-xg')){const id=el.dataset.xg,x=allGastos().find(q=>String(q.id)===id);if(!x)return;
+    const fj=$('gFijo').checked,id=(fj?'f':'g')+Date.now(),k=$('gK').value,c=$('gC').value.trim();
+    const w=fj?{fijos:{[id]:{desde:d.slice(0,7),dia:+d.slice(8,10),m,c,k}}}:{gastos:{[id]:{d,m,c,k}}};
+    FIN().set(w,{merge:true}).then(()=>{$('gC').value='';$('gM').value='';$('gFijo').checked=false;toast(fj?'Gasto fijo agregado ✓':'Gasto agregado ✓')}).catch(werr)}
+  else if(e.target.id==='addH'){const m=+$('hM').value,d=$('hF').value;if(!d||!(m>0)){$('hErr').textContent='Ingresa fecha y un monto mayor a 0.';return}$('hErr').textContent='';
+    FIN().set({gifts:{['h'+Date.now()]:{d,m,c:$('hC').value.trim()}}},{merge:true}).then(()=>{$('hC').value='';$('hM').value='';toast('Giftcard registrada ✓')}).catch(werr)}
+  else if(e.target.id==='saveMeta'){const v=Math.round(+$('metaI').value);if(!(v>=0)||$('metaI').value===''){$('metaErr').textContent='Ingresa un monto válido.';return}$('metaErr').textContent='';
+    FIN().set({meta:v},{merge:true}).then(()=>toast(v?'Meta guardada ✓':'Meta quitada')).catch(werr)}
+  else if(el=g('data-xg')){const id=el.dataset.xg,x=gastosDe(month).find(q=>String(q.id)===id);if(!x)return;
     ask('Eliminar gasto',`¿Seguro que quieres eliminar "${x.c||'Gasto'}" por ${money(x.m)}?`,()=>{
-      if(F.gastos[id])db.collection('masajes').doc('finanzas').update({['gastos.'+id]:firebase.firestore.FieldValue.delete()}).catch(werr);
+      if(F.gastos[id])del('gastos.'+id);
       else{D.gastos=(D.gastos||[]).filter(q=>String(q.id)!==id);db.collection('masajes').doc('datos').set({gastos:D.gastos},{merge:true}).then(draw).catch(werr)}})}
+  else if(el=g('data-xh')){const id=el.dataset.xh,x=F.gifts[id];if(!x)return;ask('Eliminar giftcard',`¿Seguro que quieres eliminar la giftcard de ${money(x.m)} (${fmtD(x.d)})?`,()=>del('gifts.'+id))}
+  else if(el=g('data-xf')){const id=el.dataset.xf.replace(/^fx/,''),f=F.fijos[id];if(!f)return;const hasta=shiftM(month,-1);
+    ask('Quitar gasto fijo',`¿Dejar de contar "${f.c||'Gasto fijo'}" desde ${mName(month)}? Los meses anteriores no cambian.`,()=>{
+      if(hasta<f.desde)del('fijos.'+id);else FIN().set({fijos:{[id]:{hasta}}},{merge:true}).then(()=>toast('Gasto fijo actualizado ✓')).catch(werr)})}
   else if(e.target.id==='confYes'){const f=confFn;$('confModal').hidden=true;if(f)f()}
   else if(e.target.id==='confNo'||e.target.id==='confModal')$('confModal').hidden=true;
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('confModal').hidden=true});
-const werr=e=>{toast(e.code==='permission-denied'?'Sin permiso para guardar. Revisa las reglas de Firestore.':'No se pudo guardar ('+(e.code||'error')+')')};
-$('gF').value=ymd(today);
+$('gF').value=$('hF').value=ymd(today);
 (function init(){
   if(!window.firebase){$('sync').textContent='No se pudo cargar Firebase.';document.body.classList.remove('locked');return}
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -154,7 +243,7 @@ $('gF').value=ymd(today);
     try{await db.collection('masajes').doc('ping').set({t:Date.now()})}catch(e){if(e.code==='permission-denied'){document.body.classList.add('denied');return}}
     document.body.classList.remove('denied');
     u1=db.collection('masajes').doc('datos').onSnapshot(s=>{if(s.exists){const d=s.data();D={appts:d.appts||[],cfg:d.cfg||{},services:d.services||[],gastos:d.gastos||[]}}gotD=true;draw();$('sync').textContent='Sincronizado en la nube ✓'},e=>{$('sync').textContent=e.code==='permission-denied'?'Esta cuenta no tiene permiso para ver los datos.':'Sin conexión ('+(e.code||'error')+')'});
-    u2=db.collection('masajes').doc('finanzas').onSnapshot(s=>{const d=s.exists?s.data():{};F={gastos:d.gastos||{},saldos:d.saldos||{}};gotF=true;draw()},e=>{$('sync').textContent='No se pudo leer los gastos ('+(e.code||'error')+'). Revisa las reglas de Firestore.'});
+    u2=db.collection('masajes').doc('finanzas').onSnapshot(s=>{const d=s.exists?s.data():{};F={gastos:d.gastos||{},saldos:d.saldos||{},fijos:d.fijos||{},gifts:d.gifts||{},meta:+d.meta||0};if(document.activeElement!==$('metaI'))$('metaI').value=F.meta||'';gotF=true;draw()},e=>{$('sync').textContent='No se pudo leer los gastos ('+(e.code||'error')+'). Revisa las reglas de Firestore.'});
   });
 })();
 </script></body></html>
