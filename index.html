@@ -234,6 +234,7 @@ function view3(app){
   const A=+ag.abono||0,ab=A>0&&A<=100?Math.round(a.v*A/100):Math.min(+a.v,A);
   const msg=encodeURIComponent(`Hola, soy ${a.n}. Reservé ${a.s} el ${fmtD(a.d)} a las ${fmt(a.t)}. Te envío el comprobante del abono.`);
   app.innerHTML=`<div class="ok"><h3 style="color:var(--grn)">Solicitud enviada</h3><p><b>${esc(a.s)}</b>${a.th?' con '+esc(a.th):''}<br>${cap(fmtD(a.d))} · ${fmt(a.t)} a ${fmt(a.t+a.m)}</p>
+  <p style="margin:0 0 10px">📍 <b>Dirección:</b> <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Cochrane 450, Osorno')}" target="_blank" rel="noopener">Cochrane 450, Osorno</a></p>
   ${MAIL_ON&&a.mail?`<p class="mut" style="margin:0 0 8px">Te enviamos el detalle a <b>${esc(a.mail)}</b>. Si no lo ves, revisa la carpeta de spam.</p>`:''}
   <p>Tu hora queda <b>pendiente hasta que se pague el abono</b>${ab?` de <b>${money(ab)}</b> (se descuenta del valor del servicio)`:''}. Tienes <b class="hl">${plz(ag&&ag.plazoMin)}</b> para transferirlo; pasado ese plazo la hora puede liberarse.</p>
   <div class="timer" id="timer" role="timer"><span>Tiempo para transferir el abono</span><b id="cd">--:--</b></div>
