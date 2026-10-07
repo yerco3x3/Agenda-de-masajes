@@ -71,6 +71,7 @@ a.lnk{color:var(--ink)}
 <div id="gate" class="box"><h1>Sin acceso</h1><p class="mut">El balance es solo para la administradora. Tu cuenta puede ver la agenda, pero no las finanzas.</p><a class="back" href="panelcatarsis.html">‹ Volver a la agenda</a></div>
 <div class="top"><div><h1>Balance</h1><div class="sub">Catarsis Estética y Bienestar</div></div><a class="back" href="panelcatarsis.html">‹ Agenda</a></div>
 <div class="dnav"><button class="nav" data-m="-1" aria-label="Mes anterior">‹</button><b id="mesT"></b><button class="nav" data-m="1" aria-label="Mes siguiente">›</button></div>
+<button class="pill" id="csvBtn" style="width:100%;margin:6px 0 2px">⬇ Descargar este mes en Excel (CSV)</button>
 <div id="body"><div class="mut" style="margin-top:20px">Cargando…</div></div>
 <div class="box"><h2 style="font-size:24px">Registrar</h2>
 <div class="fh" style="margin-top:12px">Gasto</div>
@@ -201,11 +202,28 @@ function draw(){
   <div class="box"><div class="fh">Clientas frecuentes</div><div class="mut" style="font-size:13px;margin-bottom:4px">Con citas confirmadas o con abono pagado, de todos los meses.</div>
   ${cls.length?cls.map((o,i)=>`<div class="frow"><span>${i+1}. <b>${esc(o.nm||'Sin nombre')}</b><div class="mut">${o.n} visita${o.n==1?'':'s'} · última: ${fmtS(o.last)}${o.ph?' · <a class="lnk" href="https://wa.me/'+(String(o.ph).replace(/\D/g,'').length===9?'56':'')+String(o.ph).replace(/\D/g,'')+'" target="_blank" rel="noopener">WhatsApp</a>':''}</div></span><b>${money(o.t)}</b></div>`).join(''):'<div class="mut">Aún no hay visitas registradas.</div>'}</div>`;
 }
+function csvMonth(){
+  if(!gotD||!gotF){toast('Aún cargando los datos');return}
+  const cell=v=>{v=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(v)&&isNaN(Number(v)))v="'"+v;return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const R=resumen(month),rows=[];
+  R.A.forEach(a=>rows.push({o:a.d+' '+(a.t||''),r:['Cita',a.d,a.t||'',a.c||'',a.f||'',a.s||'',(((D.services||[]).find(x=>x.n===a.s)||{}).c)||'Otros',+a.v||0,cobrado(a),'',porCobrar(a),a.e+' · '+(a.gc?'giftcard':a.sp||F.saldos[a.id]?'pagado completo':a.p==='pagado'?'abono pagado':'abono pendiente')]}));
+  gifts().filter(g=>g.d.slice(0,7)===month).forEach(g=>rows.push({o:g.d+' ~',r:['Giftcard vendida',g.d,'','','',g.c||'Giftcard','Giftcards',+g.m||0,+g.m||0,'','','']}));
+  gastosDe(month).forEach(g=>rows.push({o:g.d+' ~~',r:['Gasto'+(g.fijo?' fijo':''),g.d,'','','',g.c||'Gasto',g.k||'Otros',+g.m||0,'',+g.m||0,'','']}));
+  rows.sort((x,y)=>x.o<y.o?-1:x.o>y.o?1:0);
+  const H=['Tipo','Fecha','Hora','Cliente','Teléfono','Detalle o servicio','Categoría','Valor','Ingreso','Egreso','Saldo por cobrar','Estado'];
+  const out=[H].concat(rows.map(x=>x.r));
+  out.push([],['Total ingresos','','','','','','','',R.ing],['Total egresos','','','','','','','','',R.gas],['Ganancia neta','','','','','','','',R.net]);
+  const txt='\ufeff'+out.map(r=>r.map(cell).join(';')).join('\r\n');
+  const u=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
+  a.href=u;a.download='balance-catarsis-'+month+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);
+  toast('Archivo descargado ✓');
+}
 const werr=e=>{toast(e.code==='permission-denied'?'Sin permiso para guardar. Revisa las reglas de Firestore.':'No se pudo guardar ('+(e.code||'error')+')')};
 const del=f=>FIN().update({[f]:firebase.firestore.FieldValue.delete()}).catch(werr);
 document.addEventListener('click',e=>{
   const g=k=>e.target.closest('['+k+']');let el;
   if(el=g('data-m')){month=shiftM(month,+el.dataset.m);draw()}
+  else if(e.target.id==='csvBtn')csvMonth();
   else if(e.target.id==='addG'){const m=+$('gM').value,d=$('gF').value;if(!d||!(m>0)){$('gErr').textContent='Ingresa fecha y un monto mayor a 0.';return}$('gErr').textContent='';
     const fj=$('gFijo').checked,id=(fj?'f':'g')+Date.now(),k=$('gK').value,c=$('gC').value.trim();
     const w=fj?{fijos:{[id]:{desde:d.slice(0,7),dia:+d.slice(8,10),m,c,k}}}:{gastos:{[id]:{d,m,c,k}}};
