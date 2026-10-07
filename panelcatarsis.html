@@ -153,6 +153,7 @@ input[type=checkbox]{min-height:0;width:auto}
 @media(max-width:520px){.row.r2{flex-direction:column;gap:10px}.row.r3{grid-template-columns:1fr 1fr}.row.r3>:first-child{grid-column:1/-1}.add{padding:16px}.tabsb button{padding:10px 12px}.quick .pill{padding:8px 12px;font-size:14px}}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .gct{color:var(--teal)}
+.ro .finbtn{display:none!important}
 </style></head><body>
 <div id="login"><form class="lbox" id="loginForm"><img class="logo" id="loginLogo" alt="Catarsis"><h2>Agenda Catarsis</h2><p class="mut" style="margin:6px 0 14px">Ingresa para ver tu agenda</p>
 <input id="lEmail" type="email" placeholder="Correo" autocomplete="username" required aria-label="Correo">
@@ -469,7 +470,7 @@ function render(){
     <div class="row"><div><label class="f">Desde</label><input type="time" data-h="desde" value="${S.cfg.horario.desde}"></div><div><label class="f">Hasta</label><input type="time" data-h="hasta" value="${S.cfg.horario.hasta}"></div></div>
     <div class="row"><div><label class="f">Intervalo entre horas (min)</label><input type="number" data-h="paso" min="10" step="5" value="${S.cfg.horario.paso}"></div><div><label class="f">Anticipación mínima (horas)</label><input type="number" data-h="adv" min="0" value="${S.cfg.horario.adv}"></div></div>
     <div class="mut" style="font-size:13px">Tus clientas ven libre todo este horario, excepto lo que tengas agendado o bloqueado aquí.</div>`;
-    edit.innerHTML=`<div class="tabsb" role="tablist">${EDT.map(([k,l])=>`<button role="tab" aria-selected="${k===edTab}" class="${k===edTab?'on':''}" data-edtab="${k}">${l}</button>`).join('')}</div>`+(pane[edTab]||pane.negocio);
+    edit.innerHTML=`<a class="btn finbtn" href="balance.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin:0 0 14px">📊 Balance y gastos</a><div class="tabsb" role="tablist">${EDT.map(([k,l])=>`<button role="tab" aria-selected="${k===edTab}" class="${k===edTab?'on':''}" data-edtab="${k}">${l}</button>`).join('')}</div>`+(pane[edTab]||pane.negocio);
   }
   const single=S.branches.length===1&&S.thers.length===1;
   who.innerHTML=single?`<div class="who"><b>${esc(S.branches[0])}</b><span>${esc(S.thers[0])} · ${ROL}</span></div>`:'';
