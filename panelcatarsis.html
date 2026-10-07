@@ -116,7 +116,11 @@ body.locked #login{display:block}
 .seg button{border:0;background:var(--card);padding:9px 16px;min-height:42px;font-size:14px;cursor:pointer;color:var(--ink)}
 .seg button.on{background:var(--btn);color:var(--btnink)}
 .btn2{width:100%;margin-top:14px;background:transparent;color:var(--ink);border:1px dashed var(--mut);border-radius:14px;padding:11px;min-height:44px;font-size:14px;cursor:pointer}
-.okbtn{background:var(--grn);color:var(--onacc);border:0;border-radius:12px;padding:9px 14px;min-height:44px;font-size:14px;font-weight:500;cursor:pointer;flex:1 1 100%}
+.okbtn{background:var(--grn);color:var(--onacc);border:2px solid var(--grn);border-radius:12px;padding:9px 14px;min-height:44px;font-size:14px;font-weight:500;cursor:pointer;flex:1 1 45%}
+.okbtn.full{background:transparent;color:var(--grn)}
+.pst{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;min-height:30px}
+.und{border:0;background:none;color:var(--mut);text-decoration:underline;font-size:13px;min-height:44px;padding:0 6px;cursor:pointer}
+.ro .und{display:none!important}
 .ro .okbtn{display:none!important}
 .flash{outline:3px solid var(--teal);outline-offset:2px}
 #toastBox{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--btn);color:var(--btnink);padding:11px 18px;border-radius:14px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
@@ -424,7 +428,7 @@ function timelineHtml(all){
   let lines='';
   for(let t=a0;t<=a1;t+=30)lines+=`<div class="tll ${t%60===0?'h':''}" style="top:${(t-a0)*PXM}px"></div><div class="tlh" style="top:${(t-a0)*PXM}px">${hm(t)}</div>`;
   const blocks=m.map(x=>{const a=x.a,top=(x.s-a0)*PXM,ht=Math.max(26,(x.e-x.s)*PXM-2),w=100/x.n;
-    const name=a.bq?'No disponible':esc(a.c||'Sin nombre'),sub=a.bq?'':(a.gc?'🎁 Giftcard · ':'')+esc(a.s)+(a.p==='pagado'?' · abono pagado':a.e==='bloqueado'?'':' · abono pendiente');
+    const name=a.bq?'No disponible':esc(a.c||'Sin nombre'),sub=a.bq?'':(a.gc?'🎁 Giftcard · ':'')+esc(a.s)+(a.sp?' · pagado completo':a.p==='pagado'?' · abono pagado':a.e==='bloqueado'?'':' · abono pendiente');
     const cls=a.bq||a.e==='bloqueado'?'bq':'s-'+a.e;
     return `<div class="tlb ${cls}" data-tlb="${a.bq||a.e==='bloqueado'?'bq':a.id}" style="top:${top}px;height:${ht}px;left:calc(${x.lane*w}% + 1px);width:calc(${w}% - 3px)" title="${hm(x.s)} a ${hm(x.e)}"><b>${hm(x.s)} ${name}</b>${ht>=44&&sub?sub:''}</div>`}).join('');
   let now='';
@@ -496,7 +500,7 @@ function render(){
   const pend=L.filter(a=>!['disponible','bloqueado'].includes(a.e)&&a.p==='pendiente').length;
   dayInfo.textContent=L.length?`${L.length} hora${L.length==1?'':'s'} agendada${L.length==1?'':'s'}`+(pend?` · ${pend} abono${pend==1?'':'s'} pendiente${pend==1?'':'s'}`:''):'Sin horas agendadas.';
   viewbar.innerHTML=`<button data-view="lista" class="${dayView==='lista'?'on':''}">Lista</button><button data-view="linea" class="${dayView==='linea'?'on':''}">Línea de tiempo</button>`;
-  list.innerHTML=dayView==='linea'?timelineHtml(L0.filter(a=>a.d===sel)):L.map(a=>{const free=a.e==='disponible'||a.e==='bloqueado';return `<div class="appt s-${a.e}" id="ap-${a.id}"><div class="t">${a.t}</div><div class="i"><b>${a.e==='bloqueado'?'Horario bloqueado':a.e==='disponible'?'Horario disponible':esc(a.c||'Sin nombre')}</b>${a.f&&!free?` · <a href="${wa(a.f)}" target="_blank" rel="noopener">${esc(a.f)}</a>`:''}<div class="mut">${a.gc?'<b class="gct">🎁 Giftcard</b> · ':''}${esc(a.s)} · hasta ${end(a.t,a.m)} · ${money(a.v)}</div></div><button class="x" style="flex-basis:38px;height:38px" data-xa="${a.id}" aria-label="Quitar hora">✕</button><div class="ctl">${!free&&a.p==='pendiente'?`<button class="okbtn" data-ok="${a.id}">✓ Marcar abono pagado</button>`:''}<select data-e="${a.id}" aria-label="Estado">${opt([...(a.e==='disponible'?[['disponible','Disponible']]:[]),['bloqueado','Bloqueado'],['reservada','Reservada'],['confirmada','Confirmada']],a.e)}</select>${free?'':`<select class="pg-${a.p}" data-p="${a.id}" aria-label="Abono">${opt([['pendiente','Abono pendiente'],['pagado','Abono pagado']],a.p)}</select>`}${!free&&a.f?`<a class="pill wab" href="${waMsg(a)}" target="_blank" rel="noopener">Enviar comprobante</a>`:''}</div></div>`}).join('');
+  list.innerHTML=dayView==='linea'?timelineHtml(L0.filter(a=>a.d===sel)):L.map(a=>{const free=a.e==='disponible'||a.e==='bloqueado';return `<div class="appt s-${a.e}" id="ap-${a.id}"><div class="t">${a.t}</div><div class="i"><b>${a.e==='bloqueado'?'Horario bloqueado':a.e==='disponible'?'Horario disponible':esc(a.c||'Sin nombre')}</b>${a.f&&!free?` · <a href="${wa(a.f)}" target="_blank" rel="noopener">${esc(a.f)}</a>`:''}<div class="mut">${a.gc?'<b class="gct">🎁 Giftcard</b> · ':''}${esc(a.s)} · hasta ${end(a.t,a.m)} · ${money(a.v)}</div></div><button class="x" style="flex-basis:38px;height:38px" data-xa="${a.id}" aria-label="Quitar hora">✕</button><div class="ctl">${!free?`<div class="pst pg-${a.sp?'pagado':a.p}" id="st-${a.id}">${a.sp?'✓ Pagado completo':a.p==='pagado'?'✓ Abono pagado':'Abono pendiente'}${a.p==='pagado'||a.sp?`<button class="und" data-undo="${a.id}" aria-label="Deshacer pago">Deshacer</button>`:''}</div>${a.p==='pendiente'?`<button class="okbtn" data-ok="${a.id}">✓ Marcar abono pagado</button>`:''}${!a.sp?`<button class="okbtn full" data-full="${a.id}">✓ Pagado</button>`:''}`:''}<select data-e="${a.id}" aria-label="Estado">${opt([...(a.e==='disponible'?[['disponible','Disponible']]:[]),['bloqueado','Bloqueado'],['reservada','Reservada'],['confirmada','Confirmada']],a.e)}</select>${!free&&a.f?`<a class="pill wab" href="${waMsg(a)}" target="_blank" rel="noopener">Enviar comprobante</a>`:''}</div></div>`}).join('');
   slots.innerHTML=slotsHtml();blkDay.textContent=fmtD(sel);fillTimes();
   save();
 }
@@ -508,6 +512,8 @@ document.addEventListener('click',e=>{
   else if(el=g('data-d')){sel=el.dataset.d;custom=false}
   else if(el=g('data-edtab')){edTab=el.dataset.edtab}
   else if(el=g('data-view')){dayView=el.dataset.view;try{localStorage.setItem('masajes-view',dayView)}catch(_){}}
+  else if(el=g('data-full')){const a=S.appts.find(x=>x.id==el.dataset.full);if(a){a.p='pagado';a.sp=1;a.e='confirmada';showToast('Pago completo registrado ✓')}}
+  else if(el=g('data-undo')){const a=S.appts.find(x=>x.id==el.dataset.undo);if(a){if(a.sp){delete a.sp}else a.p='pendiente';showToast('Pago deshecho')}}
   else if(el=g('data-ok')){const a=S.appts.find(x=>x.id==el.dataset.ok);if(a){a.p='pagado';a.e='confirmada';showToast('Abono marcado como pagado ✓')}}
   else if(el=g('data-copy')){copyLink();return}
   else if(el=g('data-share')){window.open('https://wa.me/?text='+encodeURIComponent('Reserva tu hora en Catarsis Estética y Bienestar aquí: '+LINK()),'_blank','noopener');return}
