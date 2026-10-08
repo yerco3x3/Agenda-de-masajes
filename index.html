@@ -155,6 +155,10 @@ async function sendMail(tpl,params){
   if(!MAIL_ON||!tpl)return;
   try{await fetch('https://api.emailjs.com/api/v1.0/email/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service_id:EMAILJS.serviceId,template_id:tpl,user_id:EMAILJS.publicKey,template_params:params})})}catch(e){}
 }
+// Aviso por correo a la administradora (Google Apps Script; la URL va en firebase-config.js)
+const AVISO_URL=String(window.AVISO_URL||'').trim();
+function avisar(p){if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(AVISO_URL))return;
+  try{fetch(AVISO_URL,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)}).catch(()=>{})}catch(_){}}
 function sendMails(a,tel,mail){
   const ab=abonoDe(a.v);
   const p={cliente:a.n,telefono:tel,email_cliente:mail,to_email:mail,servicio:a.s,terapeuta:a.th||'',fecha:cap(fmtD(a.d)),hora:fmt(a.t)+' a '+fmt(a.t+a.m),duracion:a.m+' minutos',valor:money(a.v),abono:money(ab),saldo:money(Math.max(0,a.v-ab)),plazo:plz(ag&&ag.plazoMin),datos_transferencia:DATOS(),whatsapp:WA()?'https://wa.me/'+WA():'',direccion:'Cochrane 450, Osorno',mapa:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Cochrane 450, Osorno')};
@@ -272,6 +276,7 @@ document.addEventListener('submit',async e=>{
     await b.commit();
     booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n,th:curTh().n,mail,at:Date.now()};step=3;busy=false;selT=null;render();
     sendMails(booked,t,mail);
+    avisar({id:rr.id,b:tid+'_'+d+'_'+hhmm(s0),nombre:n,telefono:t,servicio:sv.n,fecha:cap(fmtD(d)),hora:fmt(s0)+' a '+fmt(s0+dur),valor:money(+sv.v),terapeuta:TH().length>1?curTh().n:'',panel:new URL('panelcatarsis.html',location.href).href});
   }catch(x){
     busy=false;$('send').disabled=false;
     let msg='No se pudo enviar. Revisa tu conexión e intenta de nuevo.';

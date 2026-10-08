@@ -18,7 +18,6 @@
 const firebaseConfig = {
   apiKey: "AIzaSyAwPaavXM-FWkLfVyXBCPmAnryNjumnwHQ",
   authDomain: "agenda-catarsis.firebaseapp.com",
-  databaseURL: "https://agenda-catarsis-default-rtdb.firebaseio.com",
   projectId: "agenda-catarsis",
   storageBucket: "agenda-catarsis.firebasestorage.app",
   messagingSenderId: "759977913283",
@@ -29,6 +28,12 @@ const firebaseConfig = {
 // Déjala vacía ('') si no la usas.
 const appCheckKey = '';
 
+// Aviso por correo de nuevas reservas (opcional).
+// Pega aquí la URL de tu Google Apps Script (termina en /exec).
+// Si la dejas vacía (''), no se envían avisos.
+const avisoCorreoUrl = 'https://script.google.com/macros/s/AKfycbwj1YNJEYZeEXxJWwOW4tLtoCDW2qnePZQEQVuZf5dgHDtu6FWxznpgpv5C2wyyvK-g-w/exec';
+
 // No cambies estas líneas:
 window.FIREBASE_CONFIG = firebaseConfig;
 window.APPCHECK_KEY = appCheckKey;
+window.AVISO_URL = avisoCorreoUrl;
