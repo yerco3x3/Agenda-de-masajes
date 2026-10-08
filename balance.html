@@ -46,7 +46,7 @@ label.f{display:block;font-size:13px;color:var(--mut);margin:0 0 5px 4px}
 .mbox{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;max-width:380px;width:100%;text-align:center}
 #login{display:none}#gate{display:none;max-width:380px;margin:60px auto 0;text-align:center}
 body.locked>*:not(#login){display:none!important}body.locked #login{display:block}
-body.denied>*:not(#gate){display:none!important}body.denied #gate{display:block}
+body.denied>*:not(#gate):not(#toastBox){display:none!important}body.denied #gate{display:block}
 #toastBox{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--btn);color:var(--btnink);padding:11px 18px;border-radius:14px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
 #toastBox.on{opacity:1}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
@@ -82,6 +82,10 @@ a.lnk{color:var(--ink)}
 .lnote{background:var(--tint);border-radius:14px;padding:10px 12px;font-size:13.5px}
 #login [hidden]{display:none!important}
 #login button:disabled,#login input:disabled{opacity:.6;cursor:progress}
+
+.deny{background:var(--card);border:2px solid var(--red);border-radius:20px;padding:14px 16px;margin-top:16px;font-size:14.5px;line-height:1.4}
+.deny code{display:block;margin:8px 0 2px;user-select:all;background:var(--tint);padding:8px 10px;border-radius:10px;word-break:break-all;font-size:13.5px}
+.deny .row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}.deny .pill{min-height:42px}
 </style></head><body class="locked">
 <div id="login"><div class="lbox">
 <div class="lhead"><img class="logo" id="loginLogo" alt="Catarsis" src="icon-192.png"><h2>Balance Catarsis</h2><p class="mut">Entra para ver tus finanzas. Solo la cuenta administradora puede verlas.</p></div>
@@ -97,7 +101,7 @@ a.lnk{color:var(--ink)}
 <button class="btn" style="width:100%" type="submit">Entrar</button></form>
 <div class="llinks"><button type="button" class="linkish" id="lReset">Olvidé mi contraseña</button></div>
 </div></div></div>
-<div id="gate" class="box"><h1>Sin acceso</h1><p class="mut">El balance es solo para la administradora. Tu cuenta puede ver la agenda, pero no las finanzas.</p><a class="back" href="panelcatarsis.html">‹ Volver a la agenda</a></div>
+<div id="gate" class="box"><h1>Sin acceso</h1><p class="mut">El balance es solo para la administradora.</p><div id="gateInfo" class="deny" style="text-align:left"></div><div class="row" style="justify-content:center;flex-wrap:wrap"><a class="back" href="panelcatarsis.html">‹ Volver a la agenda</a><button class="pill" id="gateOut">Salir y entrar con otra cuenta</button></div></div>
 <div class="top"><div><h1>Balance</h1><div class="sub">Catarsis Estética y Bienestar</div></div><a class="back" href="panelcatarsis.html">‹ Agenda</a></div>
 <div class="dnav"><button class="nav" data-m="-1" aria-label="Mes anterior">‹</button><b id="mesT"></b><button class="nav" data-m="1" aria-label="Mes siguiente">›</button></div>
 <button class="pill" id="csvBtn" style="width:100%;margin:6px 0 2px">⬇ Descargar este mes en Excel (CSV)</button>
@@ -266,6 +270,8 @@ document.addEventListener('click',e=>{
   else if(el=g('data-xf')){const id=el.dataset.xf.replace(/^fx/,''),f=F.fijos[id];if(!f)return;const hasta=shiftM(month,-1);
     ask('Quitar gasto fijo',`¿Dejar de contar "${f.c||'Gasto fijo'}" desde ${mName(month)}? Los meses anteriores no cambian.`,()=>{
       if(hasta<f.desde)del('fijos.'+id);else FIN().set({fijos:{[id]:{hasta}}},{merge:true}).then(()=>toast('Gasto fijo actualizado ✓')).catch(werr)})}
+  else if(e.target.id==='gateCopy'){const v=$('gateUid').textContent;(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('UID copiado ✓'),()=>toast('Mantén presionado el UID para copiarlo'))}
+  else if(e.target.id==='gateOut')$('outBtn').click();
   else if(e.target.id==='confYes'){const f=confFn;$('confModal').hidden=true;if(f)f()}
   else if(e.target.id==='confNo'||e.target.id==='confModal')$('confModal').hidden=true;
 });
@@ -317,7 +323,7 @@ const FAIL_CFG='Falta el archivo firebase-config.js o sus datos no son válidos.
     if(u1){u1();u1=null}if(u2){u2();u2=null}gotD=gotF=false;
     if(!u){document.body.classList.remove('denied');document.body.classList.add('locked');$('outBtn').hidden=true;return}
     document.body.classList.remove('locked');$('outBtn').hidden=false;
-    try{await db.collection('masajes').doc('ping').set({t:Date.now()})}catch(e){if(e.code==='permission-denied'){document.body.classList.add('denied');return}}
+    try{await db.collection('masajes').doc('ping').set({t:Date.now()})}catch(e){if(e.code==='permission-denied'){$('gateInfo').innerHTML=`Entraste como <b>${esc(u.email||'(sin correo)')}</b>. Si es tu cuenta de administradora, agrega este UID a la lista de <b>owner()</b> en las reglas de Firestore y toca Publicar:<code id="gateUid">${esc(u.uid)}</code><div class="row"><button class="pill" id="gateCopy">Copiar UID</button></div>`;document.body.classList.add('denied');return}}
     document.body.classList.remove('denied');
     u1=db.collection('masajes').doc('datos').onSnapshot(s=>{if(s.exists){const d=s.data();D={appts:d.appts||[],cfg:d.cfg||{},services:d.services||[],gastos:d.gastos||[]}}gotD=true;draw();$('sync').textContent='Sincronizado en la nube ✓'},e=>{$('sync').textContent=e.code==='permission-denied'?'Esta cuenta no tiene permiso para ver los datos.':'Sin conexión ('+(e.code||'error')+')'});
     u2=db.collection('masajes').doc('finanzas').onSnapshot(s=>{const d=s.exists?s.data():{};F={gastos:d.gastos||{},saldos:d.saldos||{},fijos:d.fijos||{},gifts:d.gifts||{},meta:+d.meta||0};if(document.activeElement!==$('metaI'))$('metaI').value=F.meta||'';gotF=true;draw()},e=>{$('sync').textContent='No se pudo leer los gastos ('+(e.code||'error')+'). Revisa las reglas de Firestore.'});
