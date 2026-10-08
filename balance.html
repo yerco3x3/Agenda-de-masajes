@@ -44,10 +44,9 @@ label.f{display:block;font-size:13px;color:var(--mut);margin:0 0 5px 4px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
 .modal[hidden]{display:none}
 .mbox{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;max-width:380px;width:100%;text-align:center}
-#login,#gate{display:none;max-width:380px;margin:60px auto 0;text-align:center}
+#login{display:none}#gate{display:none;max-width:380px;margin:60px auto 0;text-align:center}
 body.locked>*:not(#login){display:none!important}body.locked #login{display:block}
 body.denied>*:not(#gate){display:none!important}body.denied #gate{display:block}
-#login input{margin:6px 0;text-align:left}
 #toastBox{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--btn);color:var(--btnink);padding:11px 18px;border-radius:14px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
 #toastBox.on{opacity:1}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
@@ -63,11 +62,41 @@ option{background:var(--card);color:var(--ink)}
 .chk{display:flex;align-items:center;gap:8px;margin:10px 0 2px;font-size:14px}.chk input{width:auto;min-height:0}
 .sep{border:0;border-top:1px solid var(--line);margin:18px 0}
 a.lnk{color:var(--ink)}
+
+/* --- inicio de sesión --- */
+#login .lbox{max-width:420px;margin:36px auto 0;background:var(--card);border:1px solid var(--line);border-radius:28px;padding:26px 22px;display:grid;gap:14px;text-align:left}
+#login .lhead{display:grid;gap:6px;justify-items:center;text-align:center}
+#login .logo{height:72px;margin:0}
+#login h2{font:700 30px 'Barlow Condensed',sans-serif;margin:0;line-height:1.05}
+#login p{margin:0;font-size:14.5px}
+#login form{display:grid}
+#login input{width:100%;margin:0}
+#login label.f{display:block;font-size:13px;color:var(--mut);margin:0 0 5px 4px}
+#login .btn{min-height:48px;font-size:15.5px}
+.lmain{display:grid;gap:14px}
+.lgo{width:100%;min-height:48px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:14px;font:inherit;font-size:15.5px;font-weight:500;cursor:pointer}
+.or{display:flex;align-items:center;gap:12px;color:var(--mut);font-size:13px}.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.linfo{color:var(--grn);font-size:14px;font-weight:500;margin:0 0 8px}.linfo:empty{display:none}
+.llinks{display:flex;justify-content:center}
+.linkish{background:none;border:0;color:var(--ink);text-decoration:underline;font:inherit;font-size:14px;cursor:pointer;min-height:44px;padding:0 8px}
+.lnote{background:var(--tint);border-radius:14px;padding:10px 12px;font-size:13.5px}
+#login [hidden]{display:none!important}
+#login button:disabled,#login input:disabled{opacity:.6;cursor:progress}
 </style></head><body class="locked">
-<form id="login" class="box"><h1>Balance Catarsis</h1><p class="mut" style="margin:8px 0 14px">Ingresa para ver tus finanzas</p>
-<input id="lEmail" type="email" placeholder="Correo" autocomplete="username" required aria-label="Correo">
-<input id="lPass" type="password" placeholder="Contraseña" autocomplete="current-password" required aria-label="Contraseña">
-<div class="err" id="loginErr" role="alert"></div><button class="btn" style="width:100%" type="submit">Entrar</button></form>
+<div id="login"><div class="lbox">
+<div class="lhead"><img class="logo" id="loginLogo" alt="Catarsis" src="icon-192.png"><h2>Balance Catarsis</h2><p class="mut">Entra para ver tus finanzas. Solo la cuenta administradora puede verlas.</p></div>
+<p class="lnote" id="lFile" hidden>Estás abriendo la página como archivo. Para iniciar sesión, ábrela desde su dirección de GitHub Pages (https://tu-usuario.github.io/…).</p>
+<div id="lCfg" hidden><p class="err" id="lCfgMsg" role="alert" style="margin:0 0 12px"></p><button type="button" class="btn" style="width:100%" onclick="location.reload()">Volver a intentar</button></div>
+<div id="lMain" class="lmain">
+<button type="button" class="lgo" id="lGoogle">Continuar con Google</button>
+<div class="or" role="separator"><span>o con tu correo</span></div>
+<form id="loginForm" novalidate>
+<label class="f" for="lEmail">Correo</label><input id="lEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="tucorreo@gmail.com">
+<label class="f" for="lPass" style="margin-top:10px">Contraseña</label><input id="lPass" type="password" autocomplete="current-password">
+<div class="err" id="loginErr" role="alert"></div><div class="linfo" id="loginInfo" role="status"></div>
+<button class="btn" style="width:100%" type="submit">Entrar</button></form>
+<div class="llinks"><button type="button" class="linkish" id="lReset">Olvidé mi contraseña</button></div>
+</div></div></div>
 <div id="gate" class="box"><h1>Sin acceso</h1><p class="mut">El balance es solo para la administradora. Tu cuenta puede ver la agenda, pero no las finanzas.</p><a class="back" href="panelcatarsis.html">‹ Volver a la agenda</a></div>
 <div class="top"><div><h1>Balance</h1><div class="sub">Catarsis Estética y Bienestar</div></div><a class="back" href="panelcatarsis.html">‹ Agenda</a></div>
 <div class="dnav"><button class="nav" data-m="-1" aria-label="Mes anterior">‹</button><b id="mesT"></b><button class="nav" data-m="1" aria-label="Mes siguiente">›</button></div>
@@ -99,17 +128,14 @@ a.lnk{color:var(--ink)}
 <div class="row"><button class="pill" id="confNo">Cancelar</button><button class="btn" id="confYes" style="background:#b8392b;color:#fff">Sí, continuar</button></div></div></div>
 <div id="toastBox" role="status" aria-live="polite"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const FIREBASE_CONFIG={
-  apiKey: "AIzaSyAwPaavXM-FWkLfVyXBCPmAnryNjumnwHQ",
-  authDomain: "agenda-catarsis.firebaseapp.com",
-  projectId: "agenda-catarsis",
-  storageBucket: "agenda-catarsis.firebasestorage.app",
-  messagingSenderId: "759977913283",
-  appId: "1:759977913283:web:c6e7a79cc371a73b87ab76"
-};
+// La configuración de Firebase está en el archivo firebase-config.js (misma carpeta)
+const FIREBASE_CONFIG=(c=>c&&typeof c==='object'&&['apiKey','authDomain','projectId','appId'].every(k=>typeof c[k]==='string'&&c[k].trim()&&!/PEGA_AQUI/i.test(c[k]))?c:null)(window.FIREBASE_CONFIG);
+const APPCHECK_KEY=window.APPCHECK_KEY||'';
 const MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const DIA=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const $=id=>document.getElementById(id);
@@ -245,13 +271,46 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('confModal').hidden=true});
 $('gF').value=$('hF').value=ymd(today);
+/* ---------- inicio de sesión ---------- */
+function authMsg(e){const c=e&&e.code?String(e.code):'',h=location.hostname||'tu página';switch(c){
+  case 'auth/popup-closed-by-user':case 'auth/cancelled-popup-request':case 'auth/user-cancelled':return '';
+  case 'auth/popup-blocked':return 'El navegador bloqueó la ventana de Google. Permite ventanas emergentes para esta página o entra con tu correo.';
+  case 'auth/unauthorized-domain':return 'Firebase todavía no autoriza '+h+'. En Firebase, entra a Authentication → Configuración → Dominios autorizados y agrega '+h+'.';
+  case 'auth/operation-not-allowed':case 'auth/configuration-not-found':return 'Este método de inicio de sesión no está activado. En Firebase, entra a Authentication → Método de acceso y activa Google o Correo electrónico/contraseña.';
+  case 'auth/operation-not-supported-in-this-environment':return 'Para iniciar sesión, abre la página desde su dirección de GitHub Pages, no como archivo.';
+  case 'auth/account-exists-with-different-credential':return 'Ese correo ya tiene una cuenta con contraseña. Entra con tu correo y contraseña.';
+  case 'auth/invalid-credential':case 'auth/invalid-login-credentials':case 'auth/wrong-password':case 'auth/user-not-found':return 'El correo o la contraseña no coinciden. Si no la recuerdas, toca «Olvidé mi contraseña».';
+  case 'auth/user-disabled':return 'Esta cuenta está desactivada.';
+  case 'auth/invalid-email':case 'auth/missing-email':return 'Revisa el correo; no parece válido.';
+  case 'auth/missing-password':return 'Escribe tu contraseña.';
+  case 'auth/too-many-requests':return 'Demasiados intentos seguidos. Espera unos minutos y vuelve a intentarlo.';
+  case 'auth/network-request-failed':return 'No hay conexión a internet. Revisa tu conexión y vuelve a intentarlo.';
+  case 'auth/invalid-api-key':case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':return 'Los datos de firebase-config.js no son válidos. Vuelve a copiarlos desde la configuración de tu proyecto en Firebase.';
+  default:return 'No se pudo iniciar sesión'+(c?' ('+c+')':'')+'. Vuelve a intentarlo.'}}
+function loginFail(msg){const g=id=>document.getElementById(id);g('lMain').hidden=true;g('lCfg').hidden=false;g('lCfgMsg').textContent=msg}
+function setupLogin(auth){
+  const g=id=>document.getElementById(id),em=g('lEmail'),pw=g('lPass');
+  const st=(busy,err,info)=>{document.querySelectorAll('#lMain button,#lMain input').forEach(x=>x.disabled=!!busy);g('loginErr').textContent=err||'';g('loginInfo').textContent=info||''};
+  if(location.protocol==='file:')g('lFile').hidden=false;
+  try{auth.useDeviceLanguage()}catch(_){}
+  g('lGoogle').addEventListener('click',async()=>{st(true);
+    try{const p=new firebase.auth.GoogleAuthProvider();try{p.setCustomParameters({prompt:'select_account'})}catch(_){}await auth.signInWithPopup(p);st(false)}catch(e){st(false,authMsg(e))}});
+  g('loginForm').addEventListener('submit',async e=>{e.preventDefault();const m=em.value.trim();
+    if(!m){st(false,'Escribe tu correo.');em.focus();return}if(!pw.value){st(false,'Escribe tu contraseña.');pw.focus();return}
+    st(true);try{await auth.signInWithEmailAndPassword(m,pw.value);pw.value='';st(false)}catch(err){st(false,authMsg(err))}});
+  g('lReset').addEventListener('click',async()=>{const m=em.value.trim();
+    if(!m){st(false,'Escribe tu correo arriba y vuelve a tocar «Olvidé mi contraseña».');em.focus();return}
+    st(true);try{await auth.sendPasswordResetEmail(m);st(false,'','Si '+m+' tiene una cuenta, te llegará un correo para crear una contraseña nueva. Revisa también la carpeta de spam.')}catch(e){st(false,authMsg(e))}});
+}
+const FAIL_SDK='No se pudo descargar Firebase. Revisa tu conexión a internet y vuelve a intentarlo.';
+const FAIL_CFG='Falta el archivo firebase-config.js o sus datos no son válidos. Súbelo a la misma carpeta de GitHub que esta página.';
 (function init(){
-  if(!window.firebase){$('sync').textContent='No se pudo cargar Firebase.';document.body.classList.remove('locked');return}
+  if(!window.firebase){loginFail(FAIL_SDK);return}
+  if(!FIREBASE_CONFIG){loginFail(FAIL_CFG);return}
   firebase.initializeApp(FIREBASE_CONFIG);
+  if(APPCHECK_KEY&&firebase.appCheck)firebase.appCheck().activate(APPCHECK_KEY,true);
   const auth=firebase.auth();db=firebase.firestore();
-  const MSG={'auth/invalid-credential':'Correo o contraseña incorrectos.','auth/wrong-password':'Correo o contraseña incorrectos.','auth/user-not-found':'Correo o contraseña incorrectos.','auth/invalid-email':'El correo no es válido.','auth/too-many-requests':'Demasiados intentos. Espera unos minutos.','auth/network-request-failed':'Sin conexión a internet.'};
-  $('login').addEventListener('submit',async e=>{e.preventDefault();$('loginErr').textContent='';
-    try{await auth.signInWithEmailAndPassword($('lEmail').value.trim(),$('lPass').value);$('lPass').value=''}catch(err){$('loginErr').textContent=MSG[err.code]||'No se pudo entrar. Revisa tus datos.'}});
+  setupLogin(auth);
   $('outBtn').addEventListener('click',async()=>{await auth.signOut();location.reload()});
   let u1=null,u2=null;
   auth.onAuthStateChanged(async u=>{
