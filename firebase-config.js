@@ -31,7 +31,7 @@ const appCheckKey = '';
 // Aviso por correo de nuevas reservas (opcional).
 // Pega aquí la URL de tu Google Apps Script (termina en /exec).
 // Si la dejas vacía (''), no se envían avisos.
-const avisoCorreoUrl = 'https://script.google.com/macros/s/AKfycbw42-6IHejPZ6Erh6qa0ze3yjdEy3gq0dvmLGlzr2xCmwCjkgCD9UtJDXseYaSn3HBfog/exec';
+const avisoCorreoUrl = 'https://script.google.com/macros/s/AKfycbzL_ssrMvzQ14ssusUt61uPGqF9HnZAobr-AR6tVe1RUGilm1gRK9OPtLGWpng-EkELFA/exec';
 
 // No cambies estas líneas:
 window.FIREBASE_CONFIG = firebaseConfig;
