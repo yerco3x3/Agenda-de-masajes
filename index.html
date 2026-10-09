@@ -276,7 +276,7 @@ document.addEventListener('submit',async e=>{
     await b.commit();
     booked={d,t:s0,s:sv.n,m:dur,v:+sv.v,n,th:curTh().n,mail,at:Date.now()};step=3;busy=false;selT=null;render();
     sendMails(booked,t,mail);
-    avisar({id:rr.id,b:tid+'_'+d+'_'+hhmm(s0),nombre:n,telefono:t,servicio:sv.n,fecha:cap(fmtD(d)),hora:fmt(s0)+' a '+fmt(s0+dur),valor:money(+sv.v),terapeuta:TH().length>1?curTh().n:'',panel:new URL('panelcatarsis.html',location.href).href});
+    avisar({id:rr.id,b:tid+'_'+d+'_'+hhmm(s0),tel,nombre:n,telefono:t,servicio:sv.n,fecha:cap(fmtD(d)),hora:fmt(s0)+' a '+fmt(s0+dur),valor:money(+sv.v),terapeuta:TH().length>1?curTh().n:'',panel:new URL('panelcatarsis.html',location.href).href});
   }catch(x){
     busy=false;$('send').disabled=false;
     let msg='No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
